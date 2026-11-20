@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<title>健康乡镇「数字画像」</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  :root{
+    --ink:#22303C;      /* 正文 */
+    --ink-2:#54646F;    /* 次级文字 */
+    --ink-3:#8A97A2;    /* 说明 */
+    --navy:#17456F;     /* 政务主色：深蓝 */
+    --navy-d:#113454;
+    --navy-l:#E8EFF7;   /* 浅蓝底 */
+    --gold:#B58B39;     /* 点缀金 */
+    --line:#DCE4EE;
+    --bg:#F1F4F8;
+    --serif:"Noto Serif SC","Source Han Serif SC","SimSun","STSong",serif;
+  }
+  body{margin:0;background:var(--bg);font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);
+       -webkit-font-smoothing:antialiased;}
+  .wrap{padding:18px 22px 10px;}
+  .hd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;
+      padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .hd h1{margin:0;font-size:21px;letter-spacing:1px;font-family:var(--serif);font-weight:700;color:var(--navy-d);}
+  .hd .sub{font-size:11.5px;color:var(--ink-3);margin-top:5px;letter-spacing:.5px;}
+  .main{display:flex;gap:14px;align-items:flex-start;}
+  .card{background:#fff;border-radius:4px;border:1px solid var(--line);box-shadow:0 1px 2px rgba(23,69,111,.05);}
+  .left{flex:1 1 auto;min-width:0;padding:10px 8px 6px;display:flex;flex-direction:column;}
+  .cardhead{display:flex;align-items:center;justify-content:space-between;padding:2px 12px 8px;
+            border-bottom:1px solid #EDF1F6;margin-bottom:2px;}
+  .cardhead .town{font-size:17px;font-weight:700;color:var(--navy-d);letter-spacing:.5px;}
+  .cardhead .badge{display:inline-block;margin-left:8px;background:var(--navy);color:#fff;font-size:11px;
+                   padding:1px 8px;border-radius:2px;vertical-align:2px;letter-spacing:.5px;}
+  .cardhead .score{font-size:12.5px;color:var(--ink-2);}
+  .cardhead .score b{font-size:20px;color:var(--navy);margin-right:3px;font-family:Menlo,monospace;}
+  #chart{position:absolute;left:0;top:0;width:100%;height:100%;}
+  .chartbox{position:relative;flex:0 0 auto;height:600px;display:flex;overflow:hidden;}
+  #overlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+  .legend{padding:6px 16px 10px;font-size:11.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:14px;
+          align-items:center;border-top:1px solid #EDF1F6;}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:1px;margin-right:5px;vertical-align:0px;
+            border:1px solid rgba(23,69,111,.12);}
+  .lghint{font-size:10.5px;color:var(--ink-3);}
+  .cmodesw{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3);}
+  .cmodesw b{font-weight:500;font-size:11px;padding:2px 10px;border-radius:2px;background:#F2F5F9;
+       color:var(--ink-2);cursor:pointer;line-height:1.5;border:1px solid var(--line);}
+  .cmodesw b.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .dgrp{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3);padding:0 2px 8px;}
+  .dgrp b{font-weight:500;font-size:11px;padding:2px 10px;border-radius:2px;background:#F2F5F9;
+       color:var(--ink-2);cursor:pointer;line-height:1.5;border:1px solid var(--line);}
+  .dgrp b.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .mtag{font-size:10px;padding:0 5px;border:1px solid;border-radius:2px;line-height:15px;
+       white-space:nowrap;flex:0 0 auto;background:#fff;}
+  .right{flex:0 0 330px;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+  .tabs{display:flex;padding:0;gap:0;flex:0 0 auto;border-bottom:1px solid var(--line);}
+  .tab{flex:1;text-align:center;font-size:12.5px;padding:11px 0 10px;cursor:pointer;
+       background:#fff;color:var(--ink-2);user-select:none;border-bottom:2px solid transparent;
+       letter-spacing:.5px;}
+  .tab:hover{color:var(--navy);}
+  .tab.on{color:var(--navy-d);font-weight:700;border-bottom-color:var(--navy);background:#F7FAFD;}
+  .panel{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 10px 12px;
+       scrollbar-width:thin;scrollbar-color:#C3D2E0 transparent;}
+  .panel::-webkit-scrollbar{width:7px;}
+  .panel::-webkit-scrollbar-thumb{background:#C3D2E0;border-radius:4px;}
+  .panel::-webkit-scrollbar-track{background:transparent;}
+  .rank-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:2px;cursor:pointer;
+            border-left:3px solid transparent;border-bottom:1px solid #F1F5F9;
+            transition:background .15s;}
+  .rank-row:hover{background:#F5F8FC;}
+  .rank-row.on{background:var(--navy-l);border-left-color:var(--navy);}
+  .rk{width:20px;height:20px;border-radius:2px;background:#EDF1F6;color:var(--ink-3);font-size:11px;
+      display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-weight:600;
+      font-family:Menlo,monospace;}
+  .rk.r1{background:linear-gradient(135deg,#D9B45C,#B58B39);color:#fff;}
+  .rk.r2{background:linear-gradient(135deg,#C6CFD8,#9AAAB8);color:#fff;}
+  .rk.r3{background:linear-gradient(135deg,#D3A276,#A9713F);color:#fff;}
+  .rank-row.on .rk{box-shadow:0 0 0 2px rgba(23,69,111,.28);}
+  .nm{flex:1;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
+  .rank-row.on .nm{font-weight:700;color:var(--navy-d);}
+  .bar{flex:0 0 84px;height:5px;background:#EEF2F7;border-radius:1px;overflow:hidden;}
+  .bar span{display:block;height:100%;border-radius:1px;}
+  .val{flex:0 0 44px;text-align:right;font-size:12.5px;color:var(--ink);font-family:Menlo,monospace;font-weight:600;}
+  .det-cat{font-size:11.5px;color:var(--navy-d);margin:10px 0 4px;padding:3px 8px;border-radius:2px;
+           display:block;background:#F2F6FB;border-left:3px solid var(--navy);letter-spacing:.3px;}
+  .det-row{padding:5px 2px;border-bottom:1px dashed #EDF1F6;}
+  .det-top{display:flex;align-items:center;gap:5px;font-size:11.8px;flex-wrap:nowrap;}
+  .det-top .dn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .det-top .dv{color:var(--ink-3);font-family:Menlo,monospace;font-size:10.5px;flex:0 0 auto;}
+  .det-top .dp{color:var(--navy);font-weight:700;font-family:Menlo,monospace;flex:0 0 auto;}
+  .det-bar{height:2px;background:#EEF2F7;margin-top:4px;border-radius:1px;overflow:hidden;}
+  .det-bar span{display:block;height:100%;background:var(--navy);}
+  .foot{font-size:11px;color:var(--ink-3);padding:6px 26px 14px;line-height:1.8;}
+  /* ── 数据维护模块 ── */
+  .edit{margin-top:14px;padding:12px 14px 10px;}
+  .edit-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .eh-title{font-size:15px;font-weight:700;color:var(--navy-d);letter-spacing:.5px;}
+  .eh-sub{font-size:11px;color:var(--ink-3);font-weight:400;margin-left:8px;}
+  .eh-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .btn{font-size:12px;padding:5px 12px;border-radius:2px;border:1px solid #CFDAE8;background:#fff;
+       color:var(--navy);cursor:pointer;line-height:1.4;}
+  .btn:hover{background:var(--navy-l);}
+  .btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn.primary:hover{background:var(--navy-d);}
+  .btn.ghost{color:var(--ink-3);border-color:#E3E9F1;}
+  .tip{font-size:11.5px;color:var(--navy);}
+  .tip.err{color:#B4231F;}
+  .edit-wrap{margin-top:10px;max-height:390px;overflow:auto;border:1px solid var(--line);border-radius:3px;}
+  #editTable{border-collapse:separate;border-spacing:0;font-size:11.5px;table-layout:fixed;}
+  #editTable th,#editTable td{border-bottom:1px solid #EDF2F7;border-right:1px solid #F4F7FB;
+       padding:3px 5px;white-space:nowrap;overflow:hidden;background:#fff;}
+  #editTable th{position:sticky;top:0;background:#F4F7FB;color:#44586B;font-weight:600;z-index:2;}
+  #editTable th.townh{background:#E9F0F8;}
+  #editTable th.idx,#editTable td.idx{width:34px;text-align:center;color:#A7B2BA;background:#FBFCFC;}
+  #editTable th.col-name{width:170px;}
+  #editTable th.col-score{width:64px;}
+  #editTable th.col-cat{width:152px;}
+  #editTable th.col-mode{width:104px;}
+  #editTable th.col-town{width:96px;}
+  #editTable .col-mode input{color:#44586B;}
+  #editTable th.calc{width:82px;text-align:right;}
+  #editTable th.ops{width:54px;text-align:center;}
+  #editTable td.calc{text-align:right;color:var(--ink-3);font-family:Menlo,monospace;background:#FAFCFE;}
+  #editTable td.ops{text-align:center;}
+  #editTable input{border:1px solid transparent;background:transparent;font:inherit;color:inherit;
+       box-sizing:border-box;padding:2px 4px;border-radius:2px;width:100%;}
+  #editTable input:hover{border-color:#DCE6F2;}
+  #editTable input:focus{outline:none;border-color:#7FA3C8;background:#fff;box-shadow:0 0 0 2px rgba(23,69,111,.10);}
+  #editTable .col-cat input{color:#7B8794;}
+  #editTable .col-score input{text-align:right;}
+  #editTable .col-town input{text-align:right;}
+  #editTable th.col-town input{width:calc(100% - 12px);text-align:left;font-weight:600;font-size:11px;}
+  #editTable .del,.headdel{color:#C0392B;cursor:pointer;text-decoration:none;}
+  #editTable .headdel{margin-left:4px;font-weight:700;}
+
+  /* 配色配置页 */
+  .cfgm{position:fixed;inset:0;background:rgba(20,32,40,.42);display:none;align-items:center;justify-content:center;z-index:9999;}
+  .cfgm.on{display:flex;}
+  .cfgb{width:min(760px,92vw);max-height:86vh;display:flex;flex-direction:column;background:#fff;border-radius:4px;box-shadow:0 18px 50px rgba(15,30,40,.22);overflow:hidden;border-top:3px solid var(--navy);}
+  .cfgh{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid var(--line);}
+  .cfgh .cfgx{cursor:pointer;font-size:18px;color:var(--ink-3);line-height:1;padding:2px 6px;}
+  .cfgh .cfgx:hover{color:var(--navy-d);}
+  .cfgt{font-size:13px;font-weight:700;color:var(--navy-d);letter-spacing:.4px;}
+  .cfgt.h i{font-style:normal;font-weight:400;font-size:11px;color:var(--ink-3);margin-left:8px;}
+  .cfgd{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:14px 18px;overflow:auto;}
+  .cfgcol .cfgt{margin-bottom:8px;}
+  .cfgrow2{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #EDF1F6;}
+  .cfgnm{flex:1;min-width:0;font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cfgrow2 input[type=color]{width:30px;height:22px;padding:0;border:1px solid #CFDAE8;border-radius:2px;background:#fff;cursor:pointer;}
+  .cfgauto{font-size:10px;color:#9AA6B2;cursor:pointer;min-width:38px;text-align:right;}
+  .cfgauto.on{color:var(--navy);}
+  .cfgauto:hover{color:var(--gold);}
+  .cfgempty{font-size:11.5px;color:#9AA6B2;padding:6px 0;}
+  .cfgf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 18px 12px;border-top:1px solid #EDF1F6;}
+  .cfgchk{font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .cfgbts{display:flex;gap:8px;padding:0 18px 16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div>
+      <!-- <h1><span id="townCount">13</span> 个健康城镇-数字画像</h1> -->
+       <h1>数字画像</h1>
+      <!-- <div class="sub">数据源：各镇街健康指标得分率统计.xlsx（37 项指标 × 13 个乡镇得分） · 得分率 / 最高 / 平均 / 最低由分值与得分实时计算 · 满分 100 分</div> -->
+       <!-- <br> -->
+       <div class="sub">健康城镇</div>
+    </div>
+    <!-- <div class="sub">点击右侧乡镇切换 · 对比线与花瓣同一极坐标，100% 即落在最外圈</div> -->
+  </div>
+
+  <div class="main">
+    <div class="card left">
+      <div class="cardhead">
+        <div><span class="town" id="townName">—</span><span class="badge" id="townRank">—</span></div>
+        <div class="score"><b id="townScore">—</b>分 · 排名 <span id="townRankNum">—</span>/<span id="townTotal">13</span></div>
+      </div>
+      <div class="chartbox">
+        <div id="chart"></div>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="card right">
+      <div class="tabs">
+        <div class="tab on" data-tab="rank">地区排名</div>
+        <div class="tab" data-tab="detail">指标明细</div>
+      </div>
+      <div class="panel" id="panelRank"></div>
+      <div class="panel" id="panelDetail" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="card edit" id="editor">
+    <div class="edit-head">
+      <div class="eh-title">数据维护<span class="eh-sub">表格按「指标名称 / 分值 / 指标分类 / 检查方式 / 乡镇名称 + 各项得分」录入，改动即时生效并自动保存在本机；检查方式为自由文本，按录入内容自动分组与配色。导入表表头需含「指标名称」「总分值」（可选「指标分类」「检查方式」），其后各列即乡镇</span></div>
+      <div class="eh-tools">
+        <label class="btn" for="fileIn">导入 Excel</label>
+        <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden="">
+        <button class="btn" id="btnExport">导出 Excel</button>
+        <button class="btn primary" id="btnSaveFile">写回原文件</button>
+        <button class="btn" id="btnPalette">配色配置</button>
+        <button class="btn" id="btnAddInd">＋ 指标</button>
+        <button class="btn" id="btnAddTown">＋ 乡镇</button>
+        <button class="btn ghost" id="btnReset">恢复内置数据</button>
+        <span class="tip" id="editTip"></span>
+      </div>
+    </div>
+    <div class="edit-wrap"><table id="editTable"></table></div>
+  </div>
+</div>
+
+<!-- ===== 配色配置（前台配置页） ===== -->
+<div class="cfgm" id="cfgMask">
+  <div class="cfgb">
+    <div class="cfgh">
+      <div class="cfgt h">配色配置<i>优先使用这里的颜色；未配置的项可自动生成</i></div>
+      <span class="cfgx" id="cfgX">×</span>
+    </div>
+    <div class="cfgd">
+      <div class="cfgcol">
+        <div class="cfgt">指标分类配色</div>
+        <div id="cfgCats"></div>
+      </div>
+      <div class="cfgcol">
+        <div class="cfgt">检查方式配色</div>
+        <div id="cfgModes"></div>
+      </div>
+    </div>
+    <div class="cfgf">
+      <label class="cfgchk"><input type="checkbox" id="cfgAuto"> 未配置项自动生成颜色（数据项过多时自动扩展色盘）</label>
+      <span class="tip" id="cfgTip"></span>
+    </div>
+    <div class="cfgbts">
+      <button class="btn primary" id="cfgApply">保存并应用</button>
+      <button class="btn" id="cfgWrite">保存并写回原文件</button>
+      <button class="btn ghost" id="cfgReset">恢复默认色盘</button>
+      <button class="btn ghost" id="cfgCancel">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  口径说明：花瓣与三条对比线统一为「得分率」（得分 ÷ 分值，0–100%）；最高 / 平均 / 最低、乡镇总分均由下方数据维护模块中的得分与分值实时计算（平均 = 全部乡镇算术平均，含 0 分）。<br>
+  数值说明：最大值 / 平均值 / 最小值在图例、悬停提示与下方三列中均同时给出「原始得分（分）」与「得分率（%）」，原始得分 = 得分率 × 该项分值。<br>
+  配色说明：玫瑰图默认按「检查方式」（指标申报 / 暗访检查）上色，可在图例右侧切换为「指标分类」上色；检查方式同时作为标签显示在指标明细里，明细可按指标分类或检查方式分组。<br>
+  对齐说明：最高 / 平均 / 最低三条线按花瓣所用极坐标直接绘制（圆心 50%/50%、半径 86%、自 12 点起顺时针、每格 360/指标数 且落在花瓣中心角），每条线段沿角度细分插值，因此 100% 的线段严格贴在 100 分最外圈、与花瓣同格对齐。
+</div>
+
+<script>
+// 保存配色配置并写回原文件时，用页面初始源码做模板（此刻尚未渲染，DOM 还是原始标记）
+const SELF_SOURCE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const DATA = {"towns":[{"name":"建德市大洋镇","idx":0,"total":75.85,"cats":{"一、落实健康优先":4.66,"二、普及健康生活":23.35,"三、优化健康服务和保障":19.04,"四、建设健康环境":28.8}},{"name":"宁海县力洋镇","idx":1,"total":72.2,"cats":{"一、落实健康优先":4.48,"二、普及健康生活":22.48,"三、优化健康服务和保障":17.27,"四、建设健康环境":27.97}},{"name":"瓯海区泽雅镇","idx":2,"total":70.54,"cats":{"一、落实健康优先":4.48,"二、普及健康生活":23.92,"三、优化健康服务和保障":13.94,"四、建设健康环境":28.2}},{"name":"洞头区鹿西乡","idx":3,"total":71.38,"cats":{"一、落实健康优先":4.42,"二、普及健康生活":24.28,"三、优化健康服务和保障":16.07,"四、建设健康环境":26.61}},{"name":"苍南县藻溪镇","idx":4,"total":64.67,"cats":{"一、落实健康优先":4.6,"二、普及健康生活":22.48,"三、优化健康服务和保障":10.17,"四、建设健康环境":27.42}},{"name":"柯桥区王坛镇","idx":5,"total":76.33,"cats":{"一、落实健康优先":4.8,"二、普及健康生活":23.57,"三、优化健康服务和保障":20.1,"四、建设健康环境":27.86}},{"name":"诸暨市东白湖镇","idx":6,"total":73.54,"cats":{"一、落实健康优先":4.66,"二、普及健康生活":21.55,"三、优化健康服务和保障":17.92,"四、建设健康环境":29.41}},{"name":"浦江县檀溪镇","idx":7,"total":68.88,"cats":{"一、落实健康优先":4.62,"二、普及健康生活":21.75,"三、优化健康服务和保障":17.55,"四、建设健康环境":24.96}},{"name":"龙游县溪口镇","idx":8,"total":77.14,"cats":{"一、落实健康优先":4.6,"二、普及健康生活":22.77,"三、优化健康服务和保障":20.41,"四、建设健康环境":29.35}},{"name":"开化县池淮镇","idx":9,"total":80.19,"cats":{"一、落实健康优先":4.76,"二、普及健康生活":25.51,"三、优化健康服务和保障":19.75,"四、建设健康环境":30.17}},{"name":"江山市峡口镇","idx":10,"total":72.62,"cats":{"一、落实健康优先":4.6,"二、普及健康生活":23.1,"三、优化健康服务和保障":16.1,"四、建设健康环境":28.81}},{"name":"椒江区大陈镇","idx":11,"total":66.39,"cats":{"一、落实健康优先":4.5,"二、普及健康生活":21.06,"三、优化健康服务和保障":12.98,"四、建设健康环境":27.84}},{"name":"景宁县东坑镇","idx":12,"total":69.16,"cats":{"一、落实健康优先":4.53,"二、普及健康生活":19.58,"三、优化健康服务和保障":17.64,"四、建设健康环境":27.41}}],"indicators":[{"no":1,"cat":"一、落实健康优先","name":"纳入政府议事日程","score":1.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":2,"cat":"一、落实健康优先","name":"印发实施方案","score":1.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":3,"cat":"一、落实健康优先","name":"健康融万策","score":1.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":4,"cat":"一、落实健康优先","name":"居民满意度","score":2.0,"rates":[0.83,0.74,0.74,0.71,0.8,0.9,0.83,0.8125,0.8,0.88,0.8,0.75,0.7667],"max":0.9,"min":0.71,"avg":0.7969},{"no":5,"cat":"二、普及健康生活","name":"儿童青少年肥胖率","score":2.0,"rates":[0.725,0.785,0.81,0.81,0.765,0.815,0.8,0.0,0.0,0.775,0.745,0.0,0.0],"max":0.815,"min":0.0,"avg":0.5408},{"no":6,"cat":"二、普及健康生活","name":"儿童青少年近视率","score":2.0,"rates":[0.625,0.0,0.71,0.0,0.78,0.73,1.0,0.605,0.635,0.605,0.0,0.815,0.0],"max":1.0,"min":0.0,"avg":0.5004},{"no":7,"cat":"二、普及健康生活","name":"成人肥胖率","score":2.0,"rates":[0.0,0.675,0.75,0.805,0.0,0.76,0.0,1.0,0.85,0.76,0.93,0.0,0.805],"max":1.0,"min":0.0,"avg":0.5642},{"no":8,"cat":"二、普及健康生活","name":"普及健康教育","score":13.0,"rates":[0.85,0.75,0.8,0.875,0.8,0.7,0.65,0.75,0.8,0.825,0.8,0.8,0.7],"max":0.875,"min":0.65,"avg":0.7769},{"no":9,"cat":"二、普及健康生活","name":"公共场所控烟","score":4.0,"rates":[0.79,0.7867,0.6733,0.8267,0.74,0.8967,0.78,0.75,0.74,0.8933,0.7533,0.74,0.8233],"max":0.8967,"min":0.6733,"avg":0.7841},{"no":10,"cat":"二、普及健康生活","name":"促进心理健康","score":4.0,"rates":[0.81,0.766,0.772,0.693,0.707,0.769,0.795,0.647,0.811,0.834,0.785,0.718,0.693],"max":0.834,"min":0.647,"avg":0.7538},{"no":11,"cat":"二、普及健康生活","name":"群众性体育健身","score":4.0,"rates":[0.8,0.9,0.8,0.9,0.8,0.8,0.8,0.8,0.8,0.9,0.8,0.8,0.7],"max":0.9,"min":0.7,"avg":0.8154},{"no":12,"cat":"三、优化健康服务和保障","name":"疫苗接种率","score":2.0,"rates":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.6,0.6,0.0,0.0,0.6,0.6],"max":0.6,"min":0.0,"avg":0.1846},{"no":13,"cat":"三、优化健康服务和保障","name":"家医签约率","score":2.0,"rates":[0.6,0.0,0.0,0.64,0.0,0.0,0.0,0.0,0.81,1.0,0.87,0.0,0.0],"max":1.0,"min":0.0,"avg":0.3015},{"no":14,"cat":"三、优化健康服务和保障","name":"千人献血率","score":2.0,"rates":[0.0,0.6,0.0,0.0,0.0,0.6,0.6,0.6,0.0,0.0,0.0,0.0,0.0],"max":0.6,"min":0.0,"avg":0.1846},{"no":15,"cat":"三、优化健康服务和保障","name":"乡镇卫生院达标","score":2.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,1.0],"max":1.0,"min":0.0,"avg":0.9231},{"no":16,"cat":"三、优化健康服务和保障","name":"卫生院卫生室中医诊疗比","score":2.0,"rates":[0.82,0.75,0.0,0.66,0.72,0.81,0.915,0.0,0.76,0.735,0.65,0.605,0.95],"max":0.95,"min":0.0,"avg":0.6442},{"no":17,"cat":"三、优化健康服务和保障","name":"村卫生室执医比","score":2.0,"rates":[0.0,0.0,1.0,0.0,0.0,0.605,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"max":1.0,"min":0.0,"avg":0.1235},{"no":18,"cat":"三、优化健康服务和保障","name":"公立医疗机构资产负债率","score":2.0,"rates":[1.0,0.87,0.79,1.0,0.0,1.0,1.0,1.0,1.0,0.92,1.0,0.0,1.0],"max":1.0,"min":0.0,"avg":0.8138},{"no":19,"cat":"三、优化健康服务和保障","name":"孕产妇管理率","score":2.0,"rates":[0.6,0.0,0.6,0.0,0.0,0.6,0.0,0.6,0.6,0.6,0.0,0.6,0.0],"max":0.6,"min":0.0,"avg":0.3231},{"no":20,"cat":"三、优化健康服务和保障","name":"3岁以下儿童管理率","score":2.0,"rates":[0.915,0.835,0.0,0.62,0.0,0.855,0.93,0.76,0.79,0.835,0.78,1.0,0.865],"max":1.0,"min":0.0,"avg":0.7065},{"no":21,"cat":"三、优化健康服务和保障","name":"65岁以上老年人管理服务率","score":2.0,"rates":[0.73,0.69,0.635,0.68,0.65,0.7,0.75,0.635,0.705,0.795,0.0,0.0,0.69],"max":0.795,"min":0.0,"avg":0.5892},{"no":22,"cat":"三、优化健康服务和保障","name":"严重精障患者管理率","score":1.0,"rates":[1.0,1.0,1.0,0.75,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":0.75,"avg":0.9808},{"no":23,"cat":"三、优化健康服务和保障","name":"基本医保参保率","score":2.0,"rates":[0.91,0.96,0.0,0.775,0.0,0.94,0.875,0.985,0.92,0.945,0.88,1.0,0.955],"max":1.0,"min":0.0,"avg":0.7804},{"no":24,"cat":"三、优化健康服务和保障","name":"发热与肠道门诊设置","score":2.0,"rates":[0.825,0.9,0.9,0.9,0.8,0.9,0.8,0.8,0.9,0.875,0.8,0.75,0.875],"max":0.9,"min":0.75,"avg":0.8481},{"no":25,"cat":"三、优化健康服务和保障","name":"医疗服务水平","score":4.0,"rates":[0.81,0.766,0.772,0.693,0.707,0.769,0.795,0.647,0.811,0.834,0.785,0.718,0.693],"max":0.834,"min":0.647,"avg":0.7538},{"no":26,"cat":"四、建设健康环境","name":"生活垃圾无害化处理率","score":2.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":27,"cat":"四、建设健康环境","name":"生活垃圾收运村比例","score":2.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":28,"cat":"四、建设健康环境","name":"农村卫生厕所普及率","score":2.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":29,"cat":"四、建设健康环境","name":"末梢水水质达标率","score":2.0,"rates":[0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6],"max":0.6,"min":0.6,"avg":0.6},{"no":30,"cat":"四、建设健康环境","name":"农村自来水普及率","score":2.0,"rates":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],"max":1.0,"min":1.0,"avg":1.0},{"no":31,"cat":"四、建设健康环境","name":"镇容环境卫生","score":6.0,"rates":[0.8121,0.7848,0.7879,0.7909,0.6485,0.6909,0.8152,0.6727,0.8242,0.8,0.7848,0.7848,0.7545],"max":0.8242,"min":0.6485,"avg":0.7655},{"no":32,"cat":"四、建设健康环境","name":"行政村卫生","score":3.0,"rates":[0.7857,0.7629,0.6771,0.7429,0.8029,0.7429,0.8229,0.7143,0.8029,0.8129,0.7857,0.8029,0.78],"max":0.8229,"min":0.6771,"avg":0.772},{"no":33,"cat":"四、建设健康环境","name":"重点场所卫生","score":2.0,"rates":[0.8142,0.7808,0.7681,0.789,0.6958,0.726,0.8096,0.5792,0.824,0.8108,0.7858,0.7921,0.7688],"max":0.824,"min":0.5792,"avg":0.7649},{"no":34,"cat":"四、建设健康环境","name":"病媒生物防制","score":4.0,"rates":[0.7575,0.7875,0.6925,0.8833,0.77,0.84,0.7725,0.75,0.77,0.8675,0.7775,0.78,0.755],"max":0.8833,"min":0.6925,"avg":0.7849},{"no":35,"cat":"四、建设健康环境","name":"环境保护","score":4.0,"rates":[0.77,0.87,0.84,0.74,0.83,0.9,0.89,0.48,0.84,0.87,0.8,0.8,0.8],"max":0.9,"min":0.48,"avg":0.8023},{"no":36,"cat":"四、建设健康环境","name":"食品安全状况","score":4.5,"rates":[0.7522,0.5322,0.7489,0.5244,0.77,0.57,0.7544,0.5333,0.7811,0.8522,0.7789,0.78,0.7967],"max":0.8522,"min":0.5244,"avg":0.7057},{"no":37,"cat":"四、建设健康环境","name":"农贸市场卫生","score":1.5,"rates":[0.831,0.789,0.801,0.0,0.445,0.871,0.788,0.735,0.795,0.881,0.774,0.074,0.0],"max":0.881,"min":0.0,"avg":0.5988}],"full":100.0};
+
+const CAT_ORDER = ['一、落实健康优先','二、普及健康生活','三、优化健康服务和保障','四、建设健康环境'];
+const CAT_BASE = {'一、落实健康优先':'#12796E','二、普及健康生活':'#2E7FD4',
+                  '三、优化健康服务和保障':'#8B5CC7','四、建设健康环境':'#D2731F'};
+const CAT_PAL  = {'一、落实健康优先':['#3FAE9F','#12796E'],
+                  '二、普及健康生活':['#68A9E8','#2E7FD4'],
+                  '三、优化健康服务和保障':['#B185DE','#8B5CC7'],
+                  '四、建设健康环境':['#E9A75C','#D2731F']};
+
+// ═════════════════ 可编辑数据模型 ═════════════════
+// 页面只保存「指标分值 + 各乡镇得分」这层原始数据，
+// 得分率、最大 / 最小 / 平均值、乡镇总分全部由它算出来
+// 本页专属的存储 key（file:// 下各页面共用 localStorage，必须带页面标记，避免串数据）
+const LS_KEY = 'healthTownPortrait/v2/health-town-portrait';
+const LS_TAG = 'health-town-portrait-v2';
+const FALLBACK_PAL = ['#9DC0D2', '#7CA6BE'];
+
+// ═════════════════ 配色（前台可配置 + 自动生成） ═════════════════
+// 配置来源优先级：本机保存的配色（localStorage）> 源码内嵌的配置（PALETTE_EMBEDDED）> 内置默认色 > 自动生成
+/* PALETTE-CONFIG-START */
+const PALETTE_EMBEDDED = {"cats":{"一、健康优先":"#87cefa","二、健康生活":"#90ee90","三、健康服务和保障":"#fffacd","四、健康环境":"#00ff00"},"modes":{"资料评估":"#7fff00","第三方调查、现场暗访":"#87cefa","现场暗访":"#00ffff","统计数据评估":"#adff2f"},"auto":true};
+/* PALETTE-CONFIG-END */
+const LS_PALETTE = 'healthTownPortrait/v2/palette';
+
+const MODE_COLOR_FIXED = { '指标申报': '#3D8FD1', '暗访检查': '#D08A2E' };
+const MODE_PALETTE = ['#3D8FD1', '#D08A2E', '#5AA36B', '#9A6BC6', '#C0563F', '#2C7A9B', '#8C9A45', '#6E7BD6'];
+
+// 当前生效的配色配置：{ cats:{名称:色}, modes:{名称:色}, auto:true }
+let paletteCfg = resolvePaletteConfig();
+
+function resolvePaletteConfig() {
+  const cfg = { cats: {}, modes: {}, auto: true };
+  if (PALETTE_EMBEDDED && typeof PALETTE_EMBEDDED === 'object') {
+    Object.assign(cfg.cats, PALETTE_EMBEDDED.cats || {});
+    Object.assign(cfg.modes, PALETTE_EMBEDDED.modes || {});
+    if (typeof PALETTE_EMBEDDED.auto === 'boolean') cfg.auto = PALETTE_EMBEDDED.auto;
+  }
+  try {
+    const raw = localStorage.getItem(LS_PALETTE);
+    if (raw) {
+      const m = JSON.parse(raw);
+      if (m && typeof m === 'object') {
+        Object.assign(cfg.cats, m.cats || {});
+        Object.assign(cfg.modes, m.modes || {});
+        if (typeof m.auto === 'boolean') cfg.auto = m.auto;
+      }
+    }
+  } catch (e) {}
+  return cfg;
+}
+function savePaletteConfig() {
+  try { localStorage.setItem(LS_PALETTE, JSON.stringify(paletteCfg)); } catch (e) {}
+}
+
+// 色值工具
+function hexToHsl(hex) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return [210, 45, 50];
+  const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+  let hh = 0, ss = 0;
+  if (mx !== mn) {
+    const d = mx - mn;
+    ss = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) hh = (g - b) / d + (g < b ? 6 : 0);
+    else if (mx === g) hh = (b - r) / d + 2;
+    else hh = (r - g) / d + 4;
+    hh *= 60;
+  }
+  return [Math.round(hh), Math.round(ss * 100), Math.round(l * 100)];
+}
+function tint(hex, amt) {
+  const [h, s, l] = hexToHsl(hex);
+  return `hsl(${h},${Math.max(24, s - 8)}%,${Math.min(94, Math.round(l + (100 - l) * amt))}%)`;
+}
+function toHex(c) {
+  if (/^#[0-9a-fA-F]{6}$/.test(String(c))) return c;
+  try {
+    const d = document.createElement('div');
+    d.style.color = c;
+    document.body.appendChild(d);
+    const rgb = getComputedStyle(d).color.match(/\d+/g).map(Number);
+    d.remove();
+    return '#' + rgb.slice(0, 3).map(v => v.toString(16).padStart(2, '0')).join('');
+  } catch (e) { return '#3D8FD1'; }
+}
+// 自动生成：按政务常用色系轮转（深蓝 / 朱红 / 墨绿 / 金褐 / 绛紫 …），项数多时循环取色
+const PAL_GOV = [
+  ['#1F4E79', '#5C8BB8'], ['#9E2B25', '#C96A5F'], ['#2C6E5B', '#64A38F'], ['#A9822F', '#CBAA6A'],
+  ['#54508A', '#8F8BC0'], ['#2E6F95', '#79AECB'], ['#7A4B2E', '#B08464'], ['#3F7D4F', '#7CB089']
+];
+function autoColor(i, l) {
+  const p = PAL_GOV[(i < 0 ? 0 : i) % PAL_GOV.length];
+  return l >= 55 ? p[1] : p[0];
+}
+
+// 指标分类的两档色（深/浅交替用来区分相邻花瓣）
+function catColors(cat) {
+  const c = paletteCfg.cats[cat];
+  if (c) return { base: c, light: tint(c, 0.42) };
+  if (CAT_BASE[cat]) return { base: CAT_BASE[cat], light: CAT_PAL[cat][0] };
+  if (paletteCfg.auto) {
+    const i = Math.max(0, catList().indexOf(cat));
+    return { base: autoColor(i, 46), light: autoColor(i, 63) };
+  }
+  return { base: FALLBACK_PAL[1], light: FALLBACK_PAL[0] };
+}
+function catBaseColor(cat) { return catColors(cat).base; }
+
+// 检查方式：优先用配置色，其次内置，再次自动生成
+function modeColor(m) {
+  const c = paletteCfg.modes[m];
+  if (c) return c;
+  if (MODE_COLOR_FIXED[m]) return MODE_COLOR_FIXED[m];
+  if (paletteCfg.auto) {
+    const i = Math.max(0, modesInUse().indexOf(m));
+    return autoColor(i, 52);
+  }
+  const i = modesInUse().indexOf(m);
+  return MODE_PALETTE[(i < 0 ? 0 : i) % MODE_PALETTE.length];
+}
+function defaultMode(cat, name) {
+  // 环境类指标多为现场暗访核查，其余按申报材料计；可在表格中逐项改成任意文本或导入覆盖
+  return cat === '四、建设健康环境' ? '暗访检查' : '指标申报';
+}
+
+const BUILTIN = {
+  towns: DATA.towns.map(t => t.name),
+  indicators: DATA.indicators.map(d => ({
+    cat: d.cat,
+    name: d.name,
+    mode: defaultMode(d.cat, d.name),
+    score: d.score,
+    scores: d.rates.map(r => r * d.score)     // 由原得分率还原得分，保留原精度
+  }))
+};
+
+function cloneModel(m) { return JSON.parse(JSON.stringify(m)); }
+function loadModel() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const m = JSON.parse(raw);
+    if (!(m && m.tag === LS_TAG && Array.isArray(m.towns) && Array.isArray(m.indicators))) return null;
+    m.indicators.forEach(d => {
+      if (!d.mode) d.mode = defaultMode(d.cat, d.name);
+    });
+    return m;
+  } catch (e) { return null; }
+}
+function saveModel() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      tag: LS_TAG, towns: MODEL.towns, indicators: MODEL.indicators
+    }));
+  } catch (e) {}
+}
+
+let MODEL = loadModel() || cloneModel(BUILTIN);
+
+// 由 derive() 统一算出的派生量，任何数据改动后重算一次
+let NAMES = [], RATES = [], MAXV = [], MINV = [], AVGV = [];
+let PCT_MAX = [], PCT_AVG = [], PCT_MIN = [];
+let STEP = 360, ranked = [], current = null;
+let colorMode = 'mode';      // 玫瑰图配色：mode = 按检查方式（默认），cat = 按指标分类
+let detailGroup = 'mode';    // 指标明细默认按检查方式分组，可切回按指标分类
+
+function rateOf(ind, j) {
+  const full = Number(ind.score) || 0;
+  if (full <= 0) return 0;
+  return Math.min(1, Math.max(0, (Number(ind.scores[j]) || 0) / full));
+}
+
+function derive() {
+  NAMES = MODEL.indicators.map(d => d.name);
+  RATES = MODEL.indicators.map(d => MODEL.towns.map((_, j) => rateOf(d, j)));
+  MAXV  = RATES.map(r => (r.length ? Math.max(...r) : 0));
+  MINV  = RATES.map(r => (r.length ? Math.min(...r) : 0));
+  AVGV  = RATES.map(r => (r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0));
+
+  PCT_MAX = MAXV.map(v => v * 100);
+  PCT_AVG = AVGV.map(v => v * 100);
+  PCT_MIN = MINV.map(v => v * 100);
+  STEP = NAMES.length ? 360 / NAMES.length : 360;
+
+  // 花瓣配色：按检查方式（默认）或按指标分类（同类别内深浅交替）
+  let cnt = 0;
+  MODEL.indicators.forEach((ind, i) => {
+    if (colorMode === 'mode') {
+      ind.color = modeColor(ind.mode) || FALLBACK_PAL[1];
+      return;
+    }
+    if (i === 0 || ind.cat !== MODEL.indicators[i - 1].cat) cnt = 0;
+    cnt++;
+    const cc = catColors(ind.cat);
+    ind.color = cnt % 2 === 1 ? cc.base : cc.light;
+  });
+
+  ranked = MODEL.towns.map((name, j) => ({
+    name,
+    total: MODEL.indicators.reduce((s, d) => s + (Number(d.scores[j]) || 0), 0)
+  })).sort((a, b) => b.total - a.total);
+
+  const keep = current && ranked.find(t => t.name === current.name);
+  current = keep || ranked[0];
+}
+
+derive();
+
+const chart = echarts.init(document.getElementById('chart'));
+
+// ── 极坐标公共参数：玫瑰图与雷达图共用同一套中心 / 半径 / 角度 ─────────────
+const POLAR = {
+  center: ['50%', '50%'],   // 同一个圆心
+  radius: '86%',            // 同一个外半径
+  startAngle: 90,           // 12 点方向为第 1 个指标，顺时针递增
+  clockwise: true
+};
+
+function buildOption(town) {
+  const idx = Math.max(0, MODEL.towns.indexOf(town.name));
+  return {
+    animationDuration: 700,
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(255,255,255,.97)',
+      borderColor: '#DEE6F0',
+      borderWidth: 1,
+      padding: [9, 12],
+      textStyle: { color: '#22303C', fontSize: 12 },
+      extraCssText: 'box-shadow:0 4px 16px rgba(23,69,111,.14);border-radius:2px;',
+      formatter: p => {
+        if (p.seriesType !== 'bar') return '';
+        const d = MODEL.indicators[p.dataIndex];
+        const rate = RATES[p.dataIndex][idx] * 100;
+        const got  = Number(d.scores[idx]) || 0;
+        const c = catBaseColor(d.cat);
+        return `<div style="font-weight:700;font-size:13px;margin-bottom:2px">${p.dataIndex + 1}. ${d.name}</div>
+          <div style="font-size:11px;color:${c};margin-bottom:6px">${d.cat} · 分值 ${d.score} 分</div>
+          <div style="font-size:15px;font-weight:700;color:${c}">得分率 ${rate.toFixed(1)}%</div>
+          <div style="font-size:11.5px;color:#7B8794;margin-top:2px">得分 ${got.toFixed(2)} / ${d.score} 分</div>
+          <div style="font-size:11px;color:#98A3AC;margin-top:5px;line-height:1.7">
+            最大值 ${rawOf(p.dataIndex, MAXV[p.dataIndex]).toFixed(2)} 分（${(MAXV[p.dataIndex]*100).toFixed(1)}%）<br>
+            平均值 ${rawOf(p.dataIndex, AVGV[p.dataIndex]).toFixed(2)} 分（${(AVGV[p.dataIndex]*100).toFixed(1)}%）<br>
+            最小值 ${rawOf(p.dataIndex, MINV[p.dataIndex]).toFixed(2)} 分（${(MINV[p.dataIndex]*100).toFixed(1)}%）</div>`;
+      }
+    },
+    // ① 玫瑰图：极坐标柱状，柱子从圆心向外，角度方向 = 指标
+    angleAxis: {
+      type: 'category',
+      data: NAMES,
+      startAngle: POLAR.startAngle,
+      clockwise: POLAR.clockwise,
+      boundaryGap: false,      // 不留间隔：每格恰好占 360/37，花瓣中心对齐雷达射线
+      axisLine: { show: false },
+      axisTick: { show: false },
+      // 外圈标序号 1~37，与右侧「指标明细」和雷达射线一一对应
+      axisLabel: { show: true, margin: 9, fontSize: 9, color: '#8C9AAA', interval: 0,
+                   formatter: (v, i) => i + 1 },
+      splitLine: { show: false }
+    },
+    radiusAxis: {
+      min: 0, max: 100,        // 与雷达的 0–100 同刻度
+      splitNumber: 5,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: false },
+      splitLine: { show: true, lineStyle: { color: '#EEF3F9', width: 1 } }
+    },
+    polar: { center: POLAR.center, radius: ['0%', POLAR.radius] },
+    series: [
+      // 花瓣（该镇得分率）
+      {
+        type: 'bar',
+        coordinateSystem: 'polar',
+        barWidth: '100%',
+        silent: false,
+        // itemStyle: { color: p => DATA.indicators[p.dataIndex].color, borderWidth: 0 },
+        itemStyle: { 
+          color: p => MODEL.indicators[p.dataIndex].color,
+          borderRadius: ['0%', '0%', '50%', '50%']
+        },
+        data: RATES.map((arr, i) => ({ value: arr[idx] * 100 })),
+        z: 2
+      }
+    ],
+    // 最高 / 平均 / 最低三条对比线不再用 radar 组件（其角向排布与花瓣分格不同），
+    // 改由 drawCompareLines() 按同一套极坐标几何直接绘制，见下方。
+  };
+}
+
+// ── 对比线：叠一层 canvas，按花瓣所用的同一套极坐标几何自己画 ─────────────
+// 花瓣分格 = 每格 360/指标数，第 i 个花瓣中心角 = i*step（barWidth 100%，两侧各占半格）
+// 半径刻度 = polar.radius '86%' → R = min(w,h)/2*0.86，故 100% 必落在最外圈
+const OV = document.getElementById('overlay');
+
+function drawCompareLines() {
+  const w = OV.parentElement.clientWidth;
+  const h = OV.parentElement.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  OV.width  = Math.round(w * dpr);
+  OV.height = Math.round(h * dpr);
+  OV.style.width = w + 'px';
+  OV.style.height = h + 'px';
+  const ctx = OV.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
+  // 本函数的 0° 就对应 12 点方向（即 ECharts 的 startAngle:90），故不再叠加 startAngle
+  const px = (deg, ratio) => [
+    cx + R * ratio * Math.sin(deg * Math.PI / 180),
+    cy - R * ratio * Math.cos(deg * Math.PI / 180)
+  ];
+
+  // 沿角度细分：相邻指标之间按极坐标插值，同为 100% 的段落就成了贴着外圈的圆弧
+  const SEG = 10;
+  function trace(vals) {
+    let started = false;
+    vals.forEach((v, i) => {
+      const nv = vals[(i + 1) % vals.length];
+      for (let s = 0; s < SEG; s++) {
+        const t = s / SEG;
+        const p = px((i + t) * STEP, Math.max(v + (nv - v) * t, 0) / 100);
+        if (started) ctx.lineTo(p[0], p[1]);
+        else { ctx.moveTo(p[0], p[1]); started = true; }
+      }
+    });
+    ctx.closePath();
+  }
+
+  // ① 37 条分格射线（浅色底纹，与花瓣分界对齐）
+  ctx.beginPath();
+  for (let i = 0; i < NAMES.length; i++) {
+    const a = ((i + 0.5) * STEP) * Math.PI / 180;
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.sin(a), cy - R * Math.cos(a));
+  }
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#E3EAF3';
+  ctx.setLineDash([]);
+  ctx.stroke();
+
+  // ② 最高线先只铺极淡填充，作为底色
+  ctx.beginPath(); trace(PCT_MAX);
+  ctx.fillStyle = 'rgba(192,57,43,.05)';
+  ctx.fill();
+
+  // ③ 平均（虚线，最底层）
+  ctx.beginPath(); trace(PCT_AVG);
+  ctx.lineWidth = 1.6; ctx.strokeStyle = '#2E6F95'; ctx.setLineDash([6, 4]); ctx.stroke();
+
+  // ④ 最小（金色实线，次顶）
+  ctx.beginPath(); trace(PCT_MIN);
+  ctx.lineWidth = 1.8; ctx.strokeStyle = '#D8A22A'; ctx.setLineDash([]); ctx.stroke();
+
+  // ⑤ 最大（朱红实线，置顶）
+  ctx.beginPath(); trace(PCT_MAX);
+  ctx.lineWidth = 1.8; ctx.strokeStyle = '#C0392B'; ctx.setLineDash([]); ctx.stroke();
+
+  ctx.setLineDash([]);
+}
+
+// 排名条形配色：第 1 名用政务金，其余由深蓝渐变到浅蓝灰（名次越靠后越淡）
+function rankTone(i, n) {
+  if (i === 0) return { a: '#D7B96E', b: '#B58B39', c: '#96702A' };
+  const k = n <= 2 ? 0 : (i - 1) / (n - 2);
+  const from = [31, 78, 121], to = [140, 162, 184];     // #1F4E79 → #8CA2B8
+  const rgb = from.map((v, j) => Math.round(v + (to[j] - v) * k));
+  const b = '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('');
+  const lite = 'rgba(' + rgb.join(',') + ',.50)';
+  return { a: lite, b: b, c: rgb.map(v => Math.round(v * 0.82)).join(',') };
+}
+
+function updateRank() {
+  const el = document.getElementById('panelRank');
+  const mx = Math.max.apply(null, ranked.map(t => t.total).concat([1]));
+  const n = ranked.length;
+  el.innerHTML = ranked.map((t, i) => {
+    const tone = rankTone(i, n);
+    const cls = i === 0 ? ' r1' : i === 1 ? ' r2' : i === 2 ? ' r3' : '';
+    const valColor = i === 0 ? '#96702A' : 'rgb(' + tone.c + ')';
+    return `
+    <div class="rank-row ${t.name === current.name ? 'on' : ''}" data-town="${esc(t.name)}">
+      <div class="rk${cls}">${i+1}</div>
+      <div class="nm">${esc(t.name)}</div>
+      <div class="bar"><span style="width:${(t.total / mx * 100).toFixed(1)}%;background:linear-gradient(90deg,${tone.a},${tone.b})"></span></div>
+      <div class="val" style="color:${valColor}">${t.total.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateDetail() {
+  const el = document.getElementById('panelDetail');
+  const ti = Math.max(0, MODEL.towns.indexOf(current.name));
+  let html = '<div class="dgrp">分组'
+    + '<b data-grp="mode" class="' + (detailGroup === 'mode' ? 'on' : '') + '">按检查方式</b>'
+    + '<b data-grp="cat" class="' + (detailGroup === 'cat' ? 'on' : '') + '">按指标分类</b></div>';
+
+  const groups = detailGroup === 'cat' ? catList() : modesInUse();
+  groups.forEach(g => {
+    const rows = MODEL.indicators.map((d, i) => ({ d, i }))
+      .filter(x => (detailGroup === 'cat' ? x.d.cat === g : x.d.mode === g));
+    if (!rows.length) return;
+    const bg = detailGroup === 'cat' ? catBaseColor(g) : modeColor(g);
+    html += `<div class="det-cat" style="border-left-color:${bg}">${g}（${rows.length} 项）</div>`;
+    rows.forEach(({ d, i }) => {
+      const rate = RATES[i][ti] * 100;
+      const got = Number(d.scores[ti]) || 0;
+      const mc = modeColor(d.mode);
+      html += `<div class="det-row">
+        <div class="det-top">
+          <i style="width:8px;height:8px;border-radius:2px;background:${d.color};display:inline-block"></i>
+          <span class="dn" title="${i + 1}. ${d.name}">${i + 1}. ${d.name}</span>
+          <span class="mtag" style="color:${mc};border-color:${mc}">${d.mode}</span>
+          <span class="dv">${got.toFixed(2)}/${d.score}</span>
+          <span class="dp">${rate.toFixed(1)}%</span>
+        </div>
+        <div class="det-bar"><span style="width:${Math.min(rate,100).toFixed(1)}%"></span></div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html || '<div class="det-cat" style="border-left-color:#8A97A2">暂无指标</div>';
+}
+
+// 数据里实际出现的检查方式（按首次出现顺序，用于分组与配色）
+function modesInUse() {
+  const out = [];
+  MODEL.indicators.forEach(d => {
+    const m = String(d.mode || '').trim();
+    if (m && out.indexOf(m) < 0) out.push(m);
+  });
+  return out.length ? out : ['未标注'];
+}
+
+// 当前数据里出现过的类别（导入数据可能带来新类别）
+function catList() {
+  const out = [];
+  CAT_ORDER.forEach(c => { if (MODEL.indicators.some(d => d.cat === c)) out.push(c); });
+  MODEL.indicators.forEach(d => { if (!out.includes(d.cat)) out.push(d.cat); });
+  return out;
+}
+
+function updateHeader() {
+  const pos = ranked.findIndex(t => t.name === current.name) + 1;
+  document.getElementById('townName').textContent = current.name;
+  document.getElementById('townRank').textContent = '第 ' + pos + ' 名';
+  document.getElementById('townScore').textContent = current.total.toFixed(2);
+  document.getElementById('townRankNum').textContent = pos;
+  document.getElementById('townTotal').textContent = ranked.length;
+  const tc = document.getElementById('townCount');
+  if (tc) tc.textContent = MODEL.towns.length;
+}
+
+function switchTown(name) {
+  const t = ranked.find(x => x.name === name);
+  if (!t) return;
+  current = t;
+  updateHeader(); updateRank(); updateDetail();
+  chart.setOption(buildOption(t), { notMerge: true });
+  drawCompareLines();
+}
+
+// 数据改动后整体刷新：重算 → 重绘图表/列表/明细/图例 → 保存
+function refreshAll(opts) {
+  const silent = opts && opts.silent;
+  derive();
+  chart.setOption(buildOption(current), { notMerge: true });
+  updateHeader(); updateRank(); updateDetail(); drawLegend(); drawCompareLines();
+  updateCalcCells();
+  if (!silent) saveModel();
+}
+
+function drawLegend() {
+  const lg = document.getElementById('legend');
+  const sw = colorMode === 'mode'
+    ? modesInUse().map(m => `<span><i style="background:${modeColor(m)}"></i>${m}</span>`).join('')
+    : catList().map(c => `<span><i style="background:${catBaseColor(c)}"></i>${c}</span>`).join('');
+  lg.innerHTML = sw
+    + `<span><i style="background:#C0392B"></i>最大值</span>`
+    + `<span><i style="background:#2E6F95"></i>平均值</span>`
+    + `<span><i style="background:#D8A22A"></i>最小值</span>`
+    + `<span class="lghint">悬停花瓣可见三条线的原始得分（分）与得分率（%）</span>`
+    + `<span class="cmodesw">配色`
+    + `<b data-cmode="mode" class="${colorMode === 'mode' ? 'on' : ''}">检查方式</b>`
+    + `<b data-cmode="cat" class="${colorMode === 'cat' ? 'on' : ''}">指标分类</b></span>`;
+}
+
+// 配色切换：只改颜色，不重建数据
+document.getElementById('legend').addEventListener('click', e => {
+  const b = e.target.closest('[data-cmode]');
+  if (!b || b.dataset.cmode === colorMode) return;
+  colorMode = b.dataset.cmode;
+  derive();
+  chart.setOption(buildOption(current), { notMerge: true });
+  drawLegend(); updateDetail(); drawCompareLines();
+});
+
+// 指标明细的分组方式：按指标分类 / 按检查方式
+document.getElementById('panelDetail').addEventListener('click', e => {
+  const b = e.target.closest('[data-grp]');
+  if (!b || b.dataset.grp === detailGroup) return;
+  detailGroup = b.dataset.grp;
+  updateDetail();
+});
+
+chrome();
+
+// 右侧两栏高度对齐左卡，超出即出滚动条（只在确有差异时写，避免尺寸来回抖动）
+function syncPanelHeight(){
+  const left = document.querySelector('.main .left');
+  const right = document.querySelector('.main .right');
+  if (!left || !right) return;
+  const want = left.offsetHeight;
+  if (want < 200) return;
+  if (Math.abs(right.offsetHeight - want) <= 1) return;
+  right.style.height = want + 'px';
+}
+
+function chrome(){
+  chart.setOption(buildOption(current), { notMerge: true });
+  drawCompareLines();                 // 对比线按当前画布尺寸绘制，尺寸变了要重画
+  requestAnimationFrame(drawCompareLines);   // 布局/字体就位后再校一次半径
+  updateHeader(); updateRank(); updateDetail(); drawLegend();
+  syncPanelHeight();
+  requestAnimationFrame(syncPanelHeight);
+}
+
+// 交互：排名行点击（事件委托）
+document.getElementById('panelRank').addEventListener('click', e => {
+  const row = e.target.closest('.rank-row');
+  if (row) switchTown(row.dataset.town);
+});
+// Tab 切换
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === tab));
+    const isRank = tab.dataset.tab === 'rank';
+    document.getElementById('panelRank').style.display = isRank ? '' : 'none';
+    document.getElementById('panelDetail').style.display = isRank ? 'none' : '';
+    requestAnimationFrame(syncPanelHeight);
+  };
+});
+// 支持 ?town=乡镇名 定位
+(function(){
+  const q = location.search.indexOf('town=');
+  if (q >= 0) {
+    const key = decodeURIComponent(location.search.slice(q + 5));
+    const t = ranked.find(x => x.name.indexOf(key) >= 0);
+    if (t) current = t;
+  }
+})();
+if (current !== ranked[0]) { switchTown(current.name); }
+
+window.addEventListener('resize', () => { chart.resize(); drawCompareLines(); syncPanelHeight(); });
+// 容器尺寸一变化就同步重算：既覆盖窗口缩放，也覆盖首次布局未定时的补绘
+// 用 rAF 合并 + 尺寸比较，避免 resize → 布局变化 → resize 的无限放大
+let __roTick = false, __lastBox = '';
+if (window.ResizeObserver) {
+  new ResizeObserver(() => {
+    if (__roTick) return;
+    __roTick = true;
+    requestAnimationFrame(() => {
+      __roTick = false;
+      const box = OV.parentElement;
+      if (!box) return;
+      const key = box.clientWidth + 'x' + box.clientHeight;
+      if (key === __lastBox) return;
+      __lastBox = key;
+      chart.resize();
+      drawCompareLines();
+      syncPanelHeight();
+    });
+  }).observe(OV.parentElement);
+}
+
+// ═════════════════════ 数据维护模块 ═════════════════════
+// 表格结构：序号 / 指标名称 / 分值 / 类别 / 各乡镇得分 / 最大值 / 平均值 / 最小值 / 删除
+const TBL = document.getElementById('editTable');
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function num(v) { const n = parseFloat(v); return isFinite(n) ? n : 0; }
+function show2(v) { const n = Math.round((Number(v) || 0) * 100) / 100; return String(n); }
+function pct1(v) { return ((Number(v) || 0) * 100).toFixed(1) + '%'; }
+// 对比值同时给出原始得分与得分率：原始 = 得分率 × 该项分值
+function rawOf(i, rate) {
+  const sc = Number(MODEL.indicators[i] && MODEL.indicators[i].score) || 0;
+  return (Number(rate) || 0) * sc;
+}
+function calcText(i, rate) {
+  return rawOf(i, rate).toFixed(2) + ' <i style="font-style:normal;color:#A2AEB6">/ ' + pct1(rate) + '</i>';
+}
+
+function tip(msg, isErr) {
+  const el = document.getElementById('editTip');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = 'tip' + (isErr ? ' err' : '');
+  clearTimeout(tip._t);
+  if (msg) tip._t = setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function renderEditor() {
+  TBL.style.width = (34 + 170 + 64 + 152 + 104 + 96 * MODEL.towns.length + 82 * 3 + 54) + 'px';
+  let h = '<thead><tr>'
+    + '<th class="idx">序号</th><th class="col-name">指标名称</th>'
+    + '<th class="col-score">分值</th><th class="col-cat">指标分类</th><th class="col-mode">检查方式</th>';
+  MODEL.towns.forEach((t, j) => {
+    h += `<th class="townh col-town"><input data-kind="town" data-j="${j}" value="${esc(t)}">`
+       + `<span class="headdel" data-del-town="${j}" title="删除该乡镇">×</span></th>`;
+  });
+  h += '<th class="calc">最大值</th><th class="calc">平均值</th><th class="calc">最小值</th>'
+     + '<th class="ops">操作</th></tr></thead><tbody>';
+
+  MODEL.indicators.forEach((d, i) => {
+    h += `<tr>`
+      + `<td class="idx">${i + 1}</td>`
+      + `<td class="col-name"><input data-kind="name" data-i="${i}" value="${esc(d.name)}"></td>`
+      + `<td class="col-score"><input data-kind="score" data-i="${i}" type="number" step="0.5" min="0" value="${show2(d.score)}"></td>`
+      + `<td class="col-cat"><input data-kind="cat" data-i="${i}" value="${esc(d.cat)}"></td>`
+      + `<td class="col-mode"><input data-kind="mode" data-i="${i}" value="${esc(d.mode)}"></td>`;
+    MODEL.towns.forEach((_, j) => {
+      h += `<td class="col-town"><input data-kind="cell" data-i="${i}" data-j="${j}" `
+         + `type="number" step="0.01" min="0" value="${show2(d.scores[j])}"></td>`;
+    });
+    h += `<td class="calc" data-c="max" data-i="${i}">${calcText(i, MAXV[i])}</td>`
+       + `<td class="calc" data-c="avg" data-i="${i}">${calcText(i, AVGV[i])}</td>`
+       + `<td class="calc" data-c="min" data-i="${i}">${calcText(i, MINV[i])}</td>`
+       + `<td class="ops"><span class="del" data-del-ind="${i}">删除</span></td></tr>`;
+  });
+  TBL.innerHTML = h + '</tbody>';
+}
+
+// 只更新最大值/平均值/最小值三列，避免整表重建导致输入框失焦
+function updateCalcCells() {
+  if (!TBL || !TBL.rows || !MODEL) return;
+  TBL.querySelectorAll('.calc[data-c]').forEach(c => {
+    const i = +c.dataset.i;
+    const v = c.dataset.c === 'max' ? MAXV[i] : c.dataset.c === 'avg' ? AVGV[i] : MINV[i];
+    c.innerHTML = calcText(i, v);
+  });
+}
+
+// 输入即改：模型先落值，再节流刷新图表（避免每个按键都重绘）
+let editTimer = null;
+TBL.addEventListener('input', e => {
+  const el = e.target;
+  const kind = el.dataset.kind;
+  if (!kind) return;
+  const i = +el.dataset.i, j = +el.dataset.j;
+  if (kind === 'town') {
+    const old = MODEL.towns[j];
+    MODEL.towns[j] = el.value;
+    if (current && current.name === old) current.name = el.value;
+  } else if (kind === 'name') {
+    MODEL.indicators[i].name = el.value;
+  } else if (kind === 'cat') {
+    MODEL.indicators[i].cat = el.value;
+  } else if (kind === 'mode') {
+    MODEL.indicators[i].mode = el.value;
+  } else if (kind === 'score') {
+    MODEL.indicators[i].score = num(el.value);
+  } else if (kind === 'cell') {
+    MODEL.indicators[i].scores[j] = num(el.value);
+  }
+  clearTimeout(editTimer);
+  editTimer = setTimeout(() => refreshAll(), 220);
+});
+
+// 删除乡镇 / 删除指标
+TBL.addEventListener('click', e => {
+  const dt = e.target.closest('[data-del-town]');
+  if (dt) {
+    if (MODEL.towns.length <= 1) return tip('至少保留一个乡镇', true);
+    const j = +dt.dataset.delTown;
+    MODEL.towns.splice(j, 1);
+    MODEL.indicators.forEach(d => d.scores.splice(j, 1));
+    current = null;
+    refreshAll(); renderEditor();
+    return;
+  }
+  const di = e.target.closest('[data-del-ind]');
+  if (di) {
+    const i = +di.dataset.delInd;
+    MODEL.indicators.splice(i, 1);
+    if (!MODEL.indicators.length) current = null;
+    refreshAll(); renderEditor();
+  }
+});
+
+document.getElementById('btnAddInd').onclick = () => {
+  const last = MODEL.indicators[MODEL.indicators.length - 1];
+  const cat = last ? last.cat : CAT_ORDER[0];
+  MODEL.indicators.push({
+    cat, name: '新指标', mode: defaultMode(cat, '新指标'), score: 1,
+    scores: MODEL.towns.map(() => 0)
+  });
+  refreshAll(); renderEditor();
+  tip('已新增指标，可直接编辑名称 / 分值 / 检查方式 / 得分');
+};
+
+document.getElementById('btnAddTown').onclick = () => {
+  MODEL.towns.push('新乡镇' + (MODEL.towns.length + 1));
+  MODEL.indicators.forEach(d => d.scores.push(0));
+  refreshAll(); renderEditor();
+  tip('已新增乡镇列，请录入名称与各项得分');
+};
+
+document.getElementById('btnReset').onclick = () => {
+  MODEL = cloneModel(BUILTIN);
+  current = null;
+  refreshAll(); renderEditor();
+  tip('已恢复内置原始数据');
+};
+
+// ── 导入 / 导出 Excel ─────────────────────────────
+function buildWorkbook() {
+  const head1 = ['序号', '指标名称', '总分值', '指标分类', '检查方式'].concat(MODEL.towns);
+  const body1 = MODEL.indicators.map((d, i) =>
+    [i + 1, d.name, num(d.score), d.cat, d.mode].concat(MODEL.towns.map((_, j) => num(d.scores[j]))));
+  const ws1 = XLSX.utils.aoa_to_sheet([head1].concat(body1));
+
+  const head2 = ['序号', '指标名称', '分值', '指标分类', '检查方式']
+    .concat(MODEL.towns.map(t => t + '·得分率'))
+    .concat(['最大值', '平均值', '最小值']);
+  const body2 = MODEL.indicators.map((d, i) =>
+    [i + 1, d.name, num(d.score), d.cat, d.mode]
+      .concat(MODEL.towns.map((_, j) => (rateOf(d, j) * 100).toFixed(1) + '%'))
+      .concat([pct1(MAXV[i]), pct1(AVGV[i]), pct1(MINV[i])]));
+  const ws2 = XLSX.utils.aoa_to_sheet([head2].concat(body2));
+
+  const ws3 = XLSX.utils.aoa_to_sheet([['乡镇名称', '总分', '排名']]
+    .concat(ranked.map((t, i) => [t.name, Math.round(t.total * 100) / 100, i + 1])));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, '原始数据');
+  XLSX.utils.book_append_sheet(wb, ws2, '得分率');
+  XLSX.utils.book_append_sheet(wb, ws3, '乡镇汇总');
+  return wb;
+}
+
+document.getElementById('btnExport').onclick = () => {
+  if (typeof XLSX === 'undefined') return tip('Excel 组件未加载，请联网后刷新页面再试', true);
+  XLSX.writeFile(buildWorkbook(), '各镇街健康指标得分率统计（修改版）.xlsx');
+  tip('已导出「各镇街健康指标得分率统计（修改版）.xlsx」');
+};
+
+// 写回原文件：优先系统文件选择器直接覆盖，不支持时回退为同名下载
+document.getElementById('btnSaveFile').onclick = async () => {
+  if (typeof XLSX === 'undefined') return tip('Excel 组件未加载，请联网后刷新页面再试', true);
+  const buf = XLSX.write(buildWorkbook(), { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: '各镇街健康指标得分率统计.xlsx',
+        types: [{ description: 'Excel 工作簿', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+      });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      tip('已写入所选文件，原表数据已更新');
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '各镇街健康指标得分率统计.xlsx';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  tip('当前环境不支持直接写文件，已下载同名文件，替换原表即可');
+};
+
+document.getElementById('fileIn').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (typeof XLSX === 'undefined') return tip('Excel 组件未加载，请联网后刷新页面再试', true);
+  const rd = new FileReader();
+  rd.onload = ev => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: false });
+      const m = parseAoa(aoa);
+      if (!m) return tip('没识别到「指标名称 / 总分值 / 乡镇」表头，请参考导出的模板格式', true);
+      MODEL = m; current = null;
+      refreshAll(); renderEditor();
+      tip(`已导入 ${m.indicators.length} 条指标、${m.towns.length} 个乡镇`);
+    } catch (err) {
+      tip('导入失败：' + (err.message || err), true);
+    }
+  };
+  rd.readAsArrayBuffer(f);
+  e.target.value = '';
+});
+
+// 解析导入表：表头需含「指标名称」「总分值（分值/满分）」，其余数值列视为乡镇
+function parseAoa(aoa) {
+  const norm = s => String(s == null ? '' : s).replace(/\s+/g, '');
+  const skipHead = /得分率|最大|平均|最小|排名|序号|合计|总计|备注/;
+  let hi = -1, cName = -1, cScore = -1, cCat = -1, cMode = -1;
+  for (let r = 0; r < Math.min(aoa.length, 12); r++) {
+    const row = aoa[r] || [];
+    const iName = row.findIndex(x => /指标名称|指标项|指标$/.test(norm(x)));
+    const iScore = row.findIndex(x => /总分值|分值|满分|标准分/.test(norm(x)));
+    if (iName >= 0 && iScore >= 0) { hi = r; cName = iName; cScore = iScore; break; }
+  }
+  if (hi < 0) return null;
+  const head = aoa[hi] || [];
+  cCat = head.findIndex(x => /指标分类|类别|分类|维度/.test(norm(x)));
+  cMode = head.findIndex(x => /检查方式|检查方法|核查方式|检查形式/.test(norm(x)));
+  const townCols = [];
+  head.forEach((x, c) => {
+    const t = norm(x);
+    if (c === cName || c === cScore || c === cCat || c === cMode) return;
+    if (!t || skipHead.test(t)) return;
+    if (/^\d+(\.\d+)?$/.test(t)) return;
+    townCols.push(c);
+  });
+  if (!townCols.length) return null;
+
+  const towns = townCols.map(c => String(head[c]).trim());
+  const indicators = [];
+  for (let r = hi + 1; r < aoa.length; r++) {
+    const row = aoa[r] || [];
+    const name = String(row[cName] == null ? '' : row[cName]).trim();
+    if (!name || skipHead.test(name)) continue;
+    const cat = cCat >= 0 && row[cCat] ? String(row[cCat]).trim() : guessCat(name);
+    const rawMode = cMode >= 0 ? String(row[cMode] == null ? '' : row[cMode]).trim() : '';
+    const mode = rawMode || defaultMode(cat, name);
+    indicators.push({
+      name,
+      cat,
+      mode,
+      score: num(String(row[cScore]).replace('%', '')),
+      scores: townCols.map(c => num(String(row[c]).replace('%', '')))
+    });
+  }
+  if (!indicators.length) return null;
+  return { towns, indicators };
+}
+
+// 导入表若没有类别列，按内置指标名尽量还原类别，否则归为「未分类」
+function guessCat(name) {
+  const hit = DATA.indicators.find(d => d.name === name);
+  return hit ? hit.cat : (CAT_ORDER[0] || '未分类');
+}
+
+// ═════════════════ 配色配置页 ═════════════════
+const cfgMask = document.getElementById('cfgMask');
+const cfgTip = (msg) => {
+  const el = document.getElementById('cfgTip');
+  if (el) el.textContent = msg;
+};
+
+function renderPalette() {
+  const cats = catList();
+  document.getElementById('cfgCats').innerHTML = cats.length ? cats.map(c => {
+    const own = paletteCfg.cats[c];
+    return '<div class="cfgrow2">'
+      + '<span class="cfgnm" title="' + c.replace(/"/g, '&quot;') + '">' + c + '</span>'
+      + '<input type="color" data-kind="cat" data-key="' + c.replace(/"/g, '&quot;') + '" value="' + toHex(catBaseColor(c)) + '">'
+      + '<span class="cfgauto' + (own ? '' : ' on') + '" data-clear="cat|' + c.replace(/"/g, '&quot;') + '">' + (own ? '自定义' : '自动') + '</span>'
+      + '</div>';
+  }).join('') : '<div class="cfgempty">暂无指标分类</div>';
+
+  const modes = modesInUse();
+  document.getElementById('cfgModes').innerHTML = modes.length ? modes.map(m => {
+    const own = paletteCfg.modes[m];
+    return '<div class="cfgrow2">'
+      + '<span class="cfgnm" title="' + m.replace(/"/g, '&quot;') + '">' + m + '</span>'
+      + '<input type="color" data-kind="mode" data-key="' + m.replace(/"/g, '&quot;') + '" value="' + toHex(modeColor(m)) + '">'
+      + '<span class="cfgauto' + (own ? '' : ' on') + '" data-clear="mode|' + m.replace(/"/g, '&quot;') + '">' + (own ? '自定义' : '自动') + '</span>'
+      + '</div>';
+  }).join('') : '<div class="cfgempty">暂无检查方式</div>';
+
+  document.getElementById('cfgAuto').checked = paletteCfg.auto !== false;
+}
+
+function collectPalette() {
+  const cfg = { cats: {}, modes: {}, auto: document.getElementById('cfgAuto').checked };
+  cfgMask.querySelectorAll('#cfgCats input[data-kind="cat"]').forEach(el => { cfg.cats[el.dataset.key] = el.value; });
+  cfgMask.querySelectorAll('#cfgModes input[data-kind="mode"]').forEach(el => { cfg.modes[el.dataset.key] = el.value; });
+  return cfg;
+}
+
+// 把配色落实全页：玫瑰图 / 明细 / 图例同步重画
+function applyPalette(cfg, tipText) {
+  paletteCfg = cfg;
+  savePaletteConfig();
+  derive();
+  chrome();
+  updateDetail();
+  drawLegend();
+  renderPalette();
+  if (tipText) cfgTip(tipText);
+}
+
+// 生成带配色配置的完整 HTML 源码（替换源码中的 PALETTE_EMBEDDED 块）
+function buildSourceWithPalette(cfg) {
+  const A = '/* PALETTE-CONFIG-START */', B = '/* PALETTE-CONFIG-END */';
+  const i = SELF_SOURCE.indexOf(A), j = SELF_SOURCE.indexOf(B, i + A.length);
+  if (i < 0 || j < 0) return SELF_SOURCE;
+  const block = A + '\nconst PALETTE_EMBEDDED = ' + JSON.stringify(cfg) + ';\n' + B;
+  return SELF_SOURCE.slice(0, i) + block + SELF_SOURCE.slice(j + B.length);
+}
+
+async function writePaletteToFile(cfg) {
+  const html = buildSourceWithPalette(cfg);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: '健康乡镇数字画像.html',
+        types: [{ description: 'HTML', accept: { 'text/html': ['.html'] } }]
+      });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      cfgTip('已写回原文件，下次打开即为该配色');
+      return true;
+    } catch (e) {
+      if (e && e.name === 'AbortError') { cfgTip('已取消保存'); return false; }
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '健康乡镇数字画像.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  cfgTip('已下载同名 HTML，覆盖原文件后下次打开即生效');
+  return true;
+}
+
+document.getElementById('btnPalette').addEventListener('click', () => {
+  renderPalette();
+  cfgTip('');
+  cfgMask.classList.add('on');
+});
+document.getElementById('cfgX').addEventListener('click', () => cfgMask.classList.remove('on'));
+document.getElementById('cfgCancel').addEventListener('click', () => cfgMask.classList.remove('on'));
+cfgMask.addEventListener('click', (e) => {
+  if (e.target === cfgMask) { cfgMask.classList.remove('on'); return; }
+  const clr = e.target.closest('[data-clear]');
+  if (clr) {
+    const parts = clr.dataset.clear.split('|');
+    const kind = parts[0] === 'cat' ? 'cats' : 'modes';
+    delete paletteCfg[kind][parts[1]];
+    savePaletteConfig();
+    derive(); chrome(); updateDetail(); drawLegend();
+    renderPalette();
+    cfgTip('已恢复为自动配色');
+  }
+});
+document.getElementById('cfgApply').addEventListener('click', () => {
+  applyPalette(collectPalette(), '配色已应用并保存在本机');
+});
+document.getElementById('cfgReset').addEventListener('click', () => {
+  applyPalette({ cats: {}, modes: {}, auto: true }, '已恢复默认色盘');
+});
+document.getElementById('cfgWrite').addEventListener('click', async () => {
+  const cfg = collectPalette();
+  applyPalette(cfg);
+  await writePaletteToFile(cfg);
+});
+
+renderEditor();
+</script></body></html>
