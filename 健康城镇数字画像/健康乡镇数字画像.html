@@ -540,7 +540,7 @@ const OV = document.getElementById('overlay');
 let HOVER_IDX = -1;
 // 形状模式：petal = 每个花瓣本身是一片树叶（根部与尖端窄、中部鼓）；
 //           whole = 整幅轮廓收成一片树叶（12 点 / 6 点为叶尖）
-let LEAF_MODE = 'whole';
+let LEAF_MODE = 'petal';
 function shapeScale(deg) { return LEAF_MODE === 'whole' ? leafScale(deg) : 1; }
 
 function drawChart() {
@@ -562,7 +562,7 @@ function drawChart() {
   SMV = smoothVals(VALS, 7);
   if (!VALS.length) return;
 
-  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.93;
   // 纵向拉伸：让叶尖顶到画布上下边，叶子立起来占满竖版版面（横向仍按 R）
   const sy = LEAF_MODE === 'whole' ? Math.max(1, (h * 0.27) / R) : 1;
   // 极坐标换算：ratio = 得分率 × 当前形状的收敛系数
@@ -605,13 +605,13 @@ function drawChart() {
       const steps = 26;
       for (let s = 0; s <= steps; s++) {
         const t = s / steps;
-        const wHalf = half * 0.95 * Math.pow(Math.sin(Math.PI * t), 0.9);
+        const wHalf = half * 0.88 * Math.pow(Math.sin(Math.PI * t), 0.72);
         const q = px(a0 + wHalf, len * t);
         s === 0 ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]);
       }
       for (let s = steps; s >= 0; s--) {
         const t = s / steps;
-        const wHalf = half * 0.95 * Math.pow(Math.sin(Math.PI * t), 0.9);
+        const wHalf = half * 0.88 * Math.pow(Math.sin(Math.PI * t), 0.72);
         const q = px(a0 - wHalf, len * t);
         ctx.lineTo(q[0], q[1]);
       }
@@ -703,7 +703,7 @@ function hitTest(evt) {
   const rect = OV.getBoundingClientRect();
   const w = rect.width, h = rect.height;
   const mx = evt.clientX - rect.left, my = evt.clientY - rect.top;
-  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.93;
   const dx = mx - cx, dy = my - cy;
   const sy = LEAF_MODE === 'whole' ? Math.max(1, (h * 0.27) / R) : 1;
   const r = Math.hypot(dx, dy / sy);
