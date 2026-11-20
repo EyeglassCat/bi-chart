@@ -16,9 +16,12 @@ bi-chart/
 
 | 方式 | 操作 | 说明 |
 | --- | --- | --- |
+| 在线预览 | https://eyeglasscat.github.io/bi-chart/ | GitHub Pages 已开通（main 分支根目录），国内可直连 |
 | 本地入口页 | 双击 `index.html` | 内嵌 iframe 直接渲染，附带「全屏打开 / 下载 HTML / 刷新预览」 |
 | 直接打开模块 | 双击 `健康城镇数字画像/健康乡镇数字画像.html` | 单文件自包含，无需服务器 |
-| Gitee 在线 | 需仓库公开或开启 Gitee Pages（Pages 需账号实名认证） | 私有仓库的 raw / Pages 地址对未登录访问返回 403 |
+| Gitee | 仅作代码托管 | Gitee Pages 已于 2024 年下线，raw 直链返回 text/plain，无法在线渲染 |
+
+> 在线预览与本地页面是两套浏览器存储，在线版默认是内置示例数据；要显示真实数据，请在页面内导入 Excel 或进入「数据维护」录入。
 
 ## 数据与配置
 
