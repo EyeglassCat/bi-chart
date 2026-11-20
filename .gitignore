@@ -1,0 +1,5 @@
+# 仅跟踪 HTML 产物，Excel 数据表不入库
+*.xlsx
+*.xls
+*.csv
+~$*
