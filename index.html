@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>健康乡镇数字画像 · 预览入口</title>
+<style>
+  :root{
+    --navy:#17456F;
+    --navy-d:#103453;
+    --gold:#B58B39;
+    --line:#DCE4EE;
+    --bg:#F1F4F8;
+    --ink:#1B2430;
+    --ink-2:#5A6B7D;
+    --serif:"Noto Serif SC","Source Han Serif SC","SimSun",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+    display:flex;flex-direction:column;
+  }
+  header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-d) 100%);
+    color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px;
+    border-bottom:3px solid var(--gold);flex:0 0 auto;
+  }
+  header .emblem{
+    width:34px;height:34px;border:1px solid rgba(255,255,255,.5);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+    font-family:var(--serif);color:#F3E3BE;flex:0 0 auto;
+  }
+  header h1{
+    font-family:var(--serif);font-size:19px;letter-spacing:2px;margin:0;font-weight:600;
+  }
+  header .sub{font-size:12px;color:#C8D6E5;letter-spacing:1px;margin-top:2px}
+  header .spacer{flex:1}
+  header .meta{font-size:12px;color:#C8D6E5;text-align:right;line-height:1.7}
+  header .meta b{color:#F3E3BE;font-weight:600}
+
+  .toolbar{
+    background:#fff;border-bottom:1px solid var(--line);
+    padding:10px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:0 0 auto;
+  }
+  .toolbar .path{
+    font-size:12px;color:var(--ink-2);background:#F5F8FC;border:1px solid var(--line);
+    border-radius:3px;padding:5px 10px;font-family:Consolas,Menlo,monospace;
+  }
+  .btn{
+    appearance:none;border:1px solid var(--navy);background:var(--navy);color:#fff;
+    font-size:13px;padding:7px 15px;border-radius:3px;cursor:pointer;letter-spacing:.5px;
+    text-decoration:none;display:inline-block;line-height:1.25;
+  }
+  .btn:hover{background:var(--navy-d);border-color:var(--navy-d)}
+  .btn.ghost{background:#fff;color:var(--navy);border-color:var(--line)}
+  .btn.ghost:hover{background:#F5F8FC;border-color:var(--navy);color:var(--navy-d)}
+  .toolbar .spacer{flex:1}
+  .hint{font-size:12px;color:var(--ink-2)}
+
+  main{flex:1 1 auto;min-height:0;padding:14px 22px 18px;display:flex;flex-direction:column}
+  .frame-wrap{
+    flex:1 1 auto;min-height:0;background:#fff;border:1px solid var(--line);
+    border-radius:4px;box-shadow:0 1px 3px rgba(23,69,111,.06);overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .frame-wrap .cap{
+    flex:0 0 auto;height:30px;display:flex;align-items:center;gap:8px;
+    padding:0 12px;border-bottom:1px solid var(--line);background:#F8FAFD;
+    font-size:12px;color:var(--ink-2);
+  }
+  .frame-wrap .cap b{color:var(--navy);font-weight:600}
+  .frame-wrap .cap .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  iframe{flex:1 1 auto;width:100%;border:0;background:#fff}
+  footer{
+    flex:0 0 auto;padding:9px 22px;font-size:12px;color:var(--ink-2);
+    border-top:1px solid var(--line);background:#fff;
+  }
+  @media (max-width:640px){
+    header{padding:12px 14px}
+    header h1{font-size:16px;letter-spacing:1px}
+    .toolbar,main,footer{padding-left:14px;padding-right:14px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="emblem">画</div>
+  <div>
+    <h1>健康乡镇数字画像</h1>
+    <div class="sub">HEALTH TOWN DIGITAL PORTRAIT · 预览入口</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta">
+    数据模块 <b>健康乡镇数字画像.html</b><br>
+    入口文件 <b>index.html</b>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="path">健康城镇数字画像 / 健康乡镇数字画像.html</span>
+  <a class="btn" id="btnOpen" href="./%E5%81%A5%E5%BA%B7%E5%9F%8E%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F/%E5%81%A5%E5%BA%B7%E4%B9%A1%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F.html" target="_blank" rel="noopener">全屏打开</a>
+  <a class="btn ghost" id="btnDl" href="./%E5%81%A5%E5%BA%B7%E5%9F%8E%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F/%E5%81%A5%E5%BA%B7%E4%B9%A1%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F.html" download>下载 HTML</a>
+  <button class="btn ghost" id="btnReload" type="button">刷新预览</button>
+  <div class="spacer"></div>
+  <span class="hint">若画面为空白，说明浏览器拦截了本地页面嵌套，请点「全屏打开」。</span>
+</div>
+
+<main>
+  <div class="frame-wrap">
+    <div class="cap"><span class="dot"></span><b>实时预览</b><span>· 单页可视化（玫瑰图 / 三线对比 / 地区排名 / 指标明细 / 数据维护 / 配色配置）</span></div>
+    <iframe id="pv" src="./%E5%81%A5%E5%BA%B7%E5%9F%8E%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F/%E5%81%A5%E5%BA%B7%E4%B9%A1%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F.html" title="健康乡镇数字画像预览"></iframe>
+  </div>
+</main>
+
+<footer>
+  仓库地址：gitee.com/hskgit/bi-chart · 目录：健康城镇数字画像 · 预览页仅作入口，不改变数据模块本身
+</footer>
+
+<script>
+  var target = "./%E5%81%A5%E5%BA%B7%E5%9F%8E%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F/%E5%81%A5%E5%BA%B7%E4%B9%A1%E9%95%87%E6%95%B0%E5%AD%97%E7%94%BB%E5%83%8F.html";
+  document.getElementById('btnReload').addEventListener('click', function(){
+    document.getElementById('pv').src = target + '?t=' + Date.now();
+  });
+</script>
+</body>
+</html>
