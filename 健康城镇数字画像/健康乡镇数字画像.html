@@ -94,6 +94,66 @@
   .det-top .dp{color:var(--navy);font-weight:700;font-family:Menlo,monospace;flex:0 0 auto;}
   .det-bar{height:2px;background:#EEF2F7;margin-top:4px;border-radius:1px;overflow:hidden;}
   .det-bar span{display:block;height:100%;background:var(--navy);}
+  /* ── 地区排名：行政区划筛选 ── */
+  .rf{padding:2px 0 8px;border-bottom:1px solid var(--line);margin-bottom:2px;}
+  .rf-t{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--ink-3);
+        padding:2px 2px 6px;letter-spacing:.3px;}
+  .rf-t b{font-weight:600;color:var(--navy-d);}
+  .rf-t .rst{color:var(--ink-3);cursor:pointer;border-bottom:1px dotted #C3D2E0;}
+  .rf-t .rst:hover{color:var(--navy);}
+  .rf-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+  .rfd{position:relative;}
+  .rfd summary{list-style:none;font-size:11.5px;padding:5px 6px;border:1px solid #DCE4EE;border-radius:2px;
+       background:#fff;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:3px;
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rfd summary::-webkit-details-marker{display:none;}
+  .rfd summary b{font-weight:600;color:var(--navy-d);margin-left:auto;font-size:10px;
+       font-family:Menlo,monospace;background:var(--navy-l);border-radius:8px;padding:0 5px;}
+  .rfd[open] summary{border-color:var(--navy);color:var(--navy-d);background:#F7FAFD;}
+  .rfp{position:absolute;left:0;top:calc(100% + 4px);z-index:30;width:172px;background:#fff;
+       border:1px solid #CFDAE8;border-radius:2px;box-shadow:0 6px 18px rgba(23,69,111,.14);padding:6px;}
+  .rfp:nth-child(n){}
+  .rfd:last-child .rfp,.rfd:nth-child(3) .rfp{left:auto;right:0;}
+  .rfp .rpq{width:100%;font-size:11px;padding:4px 6px;border:1px solid #DCE4EE;border-radius:2px;
+       color:var(--ink);margin-bottom:5px;outline:none;}
+  .rfl{max-height:186px;overflow-y:auto;scrollbar-width:thin;}
+  .rfl label{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 2px;cursor:pointer;
+       color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rfl label:hover{background:#F5F8FC;}
+  .rfl input{accent-color:#17456F;flex:0 0 auto;}
+  .rfl .empty{font-size:11px;color:var(--ink-3);padding:4px 2px;}
+  .rfl .tag{margin-left:auto;font-size:10px;color:var(--ink-3);font-family:Menlo,monospace;}
+  /* ── 指标对比：左右对开的条形图（蓝=当前地区，绿=对比地区） ── */
+  .cmp-h{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);padding:2px 2px 7px;
+       border-bottom:1px solid var(--line);margin-bottom:6px;}
+  .cmp-h select{font-size:11.5px;padding:3px 6px;border:1px solid #DCE4EE;border-radius:2px;
+       color:var(--navy-d);background:#fff;max-width:126px;outline:none;}
+  .cmp-h .sw{margin-left:auto;display:flex;gap:4px;}
+  .cmp-h .sw b{font-weight:500;font-size:10.5px;padding:2px 7px;border-radius:2px;background:#F2F5F9;
+       border:1px solid var(--line);cursor:pointer;color:var(--ink-2);}
+  .cmp-h .sw b.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .cmp-lg{display:flex;align-items:center;gap:12px;font-size:10.5px;color:var(--ink-3);padding:0 2px 6px;}
+  .cmp-lg i{display:inline-block;width:8px;height:8px;border-radius:1px;margin-right:4px;}
+  .cmp-item{padding:3px 2px 4px;border-bottom:1px dashed #EEF2F7;}
+  .cmp-name{display:flex;align-items:center;gap:5px;font-size:11.2px;color:var(--ink);line-height:1.5;}
+  .cmp-name .idx{font-size:9.5px;color:#fff;background:#9AAAB8;border-radius:2px;padding:0 3px;
+       font-family:Menlo,monospace;flex:0 0 auto;}
+  .cmp-name span.n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cmp-name .dl{flex:0 0 auto;font-family:Menlo,monospace;font-size:10.5px;font-weight:600;}
+  .cmp-bars{display:grid;grid-template-columns:32px 1fr 6px 1fr 32px;column-gap:3px;align-items:center;margin-top:3px;}
+  .cmp-l,.cmp-r{height:12px;display:flex;}
+  .cmp-l{justify-content:flex-end;}
+  .cmp-r{justify-content:flex-start;}
+  .cmp-l span,.cmp-r span{height:100%;display:flex;align-items:center;font-family:Menlo,monospace;
+       font-size:9.5px;color:#fff;overflow:hidden;white-space:nowrap;min-width:0;}
+  .cmp-l span{background:linear-gradient(90deg,#7DBEEA,#2F8FD0);justify-content:flex-start;padding-left:4px;
+       border-radius:2px 0 0 2px;}
+  .cmp-r span{background:linear-gradient(90deg,#43BE72,#1E9E56);justify-content:flex-end;padding-right:4px;
+       border-radius:0 2px 2px 0;}
+  .cmp-m{height:12px;background:#DCE4EE;}
+  .cmp-bars em{font-family:Menlo,monospace;font-size:9.5px;font-weight:600;font-style:normal;}
+  .cmp-bars em.vl{text-align:right;color:#2F8FD0;}
+  .cmp-bars em.vr{text-align:left;color:#1E9E56;}
   .foot{font-size:11px;color:var(--ink-3);padding:6px 26px 14px;line-height:1.8;}
   /* ── 数据维护模块 ── */
   .edit{margin-top:14px;padding:12px 14px 10px;}
@@ -191,9 +251,11 @@
       <div class="tabs">
         <div class="tab on" data-tab="rank">地区排名</div>
         <div class="tab" data-tab="detail">指标明细</div>
+        <div class="tab" data-tab="compare">指标对比</div>
       </div>
       <div class="panel" id="panelRank"></div>
       <div class="panel" id="panelDetail" style="display:none"></div>
+      <div class="panel" id="panelCompare" style="display:none"></div>
     </div>
   </div>
 
@@ -753,11 +815,123 @@ function rankTone(i, n) {
   return { a: lite, b: b, c: rgb.map(v => Math.round(v * 0.82)).join(',') };
 }
 
+// ── 行政区划：从地区名称解析「省 / 市 / 县区 / 乡镇」四级，供排名筛选与级联下拉使用 ──
+const REG_LEVELS = [
+  { k: 'prov', label: '省' }, { k: 'city', label: '市' },
+  { k: 'county', label: '县区' }, { k: 'town', label: '乡镇' }
+];
+let REGIONS = [];
+const REGION_SEL = { prov: new Set(), city: new Set(), county: new Set(), town: new Set() };
+let openRegionLv = null, regionQuery = {};
+
+function levelOfName(s) {
+  if (/省$|自治区$|特别行政区$/.test(s)) return 0;
+  if (/市$|自治州$|地区$|盟$/.test(s)) return 1;
+  if (/区$|县$|旗$/.test(s)) return 2;
+  if (/镇$|乡$|街道$|苏木$/.test(s)) return 3;
+  return 2;   // 无法判断时按「县区」层处理
+}
+function parseRegion(name) {
+  const r = { prov: '', city: '', county: '', town: '' };
+  const s = String(name || '').trim();
+  // 1) 名称里带 县/区/市 前缀 + 镇/乡/街道 的组合，如「开化县池淮镇」
+  const m = s.match(/^(.+?(?:省|市|县|区|旗))(.+?(?:镇|乡|街道|苏木))$/);
+  if (m && levelOfName(m[1]) >= 1) {
+    const li = levelOfName(m[1]);
+    r[REG_LEVELS[li].k] = m[1];
+    r.town = m[2];
+    return r;
+  }
+  // 2) 用 / 或 - 分层的完整地址
+  if (/[\/-]/.test(s)) {
+    let next = 0;
+    s.split(/[\/-]/).filter(Boolean).forEach(part => {
+      const li = Math.max(levelOfName(part), next);
+      r[REG_LEVELS[Math.min(li, 3)].k] = part;
+      next = Math.min(li + 1, 3);
+    });
+    return r;
+  }
+  // 3) 仅一个层级名，按后缀归位
+  r[REG_LEVELS[levelOfName(s)].k] = s;
+  return r;
+}
+function rebuildRegions() { REGIONS = MODEL.towns.map(parseRegion); }
+
+// 该地区是否落在当前已选的行政区划内（skipKey 用于「本级选项」的级联计算）
+function passesRegion(idx, skipKey) {
+  const r = REGIONS[idx] || {};
+  return REG_LEVELS.every(lv => {
+    if (skipKey === lv.k) return true;
+    const set = REGION_SEL[lv.k];
+    return !set.size || set.has(r[lv.k]);
+  });
+}
+
+const REGION_OPEN_HINT = '<b title="行政区划筛选：可逐级多选，选项按上级联动">按行政区划筛选</b>';
+
+// 统计某一层在某地区集合中的可选值（只受上级已选条件约束）
+function regionOptions(lvKey) {
+  const li = REG_LEVELS.findIndex(l => l.k === lvKey);
+  const map = new Map();
+  MODEL.towns.forEach((_, idx) => {
+    for (let j = 0; j < li; j++) {
+      const up = REGION_SEL[REG_LEVELS[j].k];
+      if (up.size && !up.has((REGIONS[idx] || {})[REG_LEVELS[j].k])) return;
+    }
+    const v = (REGIONS[idx] || {})[lvKey];
+    if (v) map.set(v, (map.get(v) || 0) + 1);
+  });
+  return map;
+}
+
+function regionBarHTML() {
+  let html = `<div class="rf"><div class="rf-t">${REGION_OPEN_HINT}<span class="rst" data-rst="1">重置</span></div><div class="rf-row">`;
+  REG_LEVELS.forEach(lv => {
+    const sel = REGION_SEL[lv.k];
+    const opts = regionOptions(lv.k);
+    const q = (regionQuery[lv.k] || '').trim();
+    const items = Array.from(opts.entries()).filter(([v]) => !q || v.indexOf(q) >= 0);
+    const sum = sel.size === 1 ? ' · ' + Array.from(sel)[0].slice(0, 5) : '';
+    html += `<details class="rfd" data-lv="${lv.k}"${openRegionLv === lv.k ? ' open' : ''}>
+      <summary title="${lv.label}">${lv.label}${sum ? '<span style="font-size:10px;color:#7B8794;overflow:hidden;text-overflow:ellipsis">' + esc(sum) + '</span>' : ''}<b>${sel.size || '全'}</b></summary>
+      <div class="rfp">
+        <input class="rpq" data-q="${lv.k}" value="${esc(q)}" placeholder="搜索${lv.label}">
+        <div class="rfl">
+          <label><input type="checkbox" data-lv="${lv.k}" data-v="__all__"${sel.size ? '' : ' checked'}>全部（${opts.size}）</label>
+          ${items.map(([v, c]) => `<label title="${esc(v)}"><input type="checkbox" data-lv="${lv.k}" data-v="${esc(v)}"${sel.has(v) ? ' checked' : ''}>${esc(v)}<span class="tag">${c}</span></label>`).join('') || '<div class="empty">无匹配选项</div>'}
+        </div>
+      </div>
+    </details>`;
+  });
+  return html + '</div></div>';
+}
+
+// 地区排名：筛选栏 + 列表（排名沿用全局名次，便于对照总榜）
 function updateRank() {
   const el = document.getElementById('panelRank');
+  if (!el) return;
+  rebuildRegions();
+  if (el.querySelector('.rf') && el.querySelector('.rank-list')) {
+    el.querySelector('.rf').outerHTML = regionBarHTML();
+  } else {
+    el.innerHTML = regionBarHTML() + '<div class="rank-list"></div>';
+  }
+  updateRankList();
+}
+
+function updateRankList() {
+  const el = document.getElementById('panelRank');
+  if (!el) return;
+  const box = el.querySelector('.rank-list') || el;
   const mx = Math.max.apply(null, ranked.map(t => t.total).concat([1]));
   const n = ranked.length;
-  el.innerHTML = ranked.map((t, i) => {
+  const rows = ranked.map((t, i) => ({ t, i })).filter(x => passesRegion(MODEL.towns.indexOf(x.t.name)));
+  if (!rows.length) {
+    box.innerHTML = '<div class="det-cat" style="border-left-color:#8A97A2">当前行政区划条件下暂无地区</div>';
+    return;
+  }
+  box.innerHTML = rows.map(({ t, i }) => {
     const tone = rankTone(i, n);
     const cls = i === 0 ? ' r1' : i === 1 ? ' r2' : i === 2 ? ' r3' : '';
     const valColor = i === 0 ? '#96702A' : 'rgb(' + tone.c + ')';
@@ -804,7 +978,45 @@ function updateDetail() {
   el.innerHTML = html || '<div class="det-cat" style="border-left-color:#8A97A2">暂无指标</div>';
 }
 
-// 数据里实际出现的检查方式（按首次出现顺序，用于分组与配色）
+// ── 指标对比：选区两地区，左右对开条形图（蓝=当前，绿=对比） ──
+let cmpTown = null, cmpSort = 'rate';
+function updateCompare() {
+  const el = document.getElementById('panelCompare');
+  if (!el) return;
+  const towns = MODEL.towns;
+  if (towns.length < 2) { el.innerHTML = '<div class="det-cat" style="border-left-color:#8A97A2">至少需要两个地区才能对比</div>'; return; }
+  const ci = Math.max(0, towns.indexOf(current.name));
+  const others = towns.filter((_, j) => j !== ci);
+  if (!cmpTown || cmpTown === current.name || !towns.includes(cmpTown)) cmpTown = others[0];
+  const cj = towns.indexOf(cmpTown);
+
+  const rows = MODEL.indicators.map((d, i) => {
+    const a = (RATES[i] && RATES[i][ci] ? RATES[i][ci] : 0) * 100;
+    const b = (RATES[i] && RATES[i][cj] ? RATES[i][cj] : 0) * 100;
+    return { i, d, a, b, gap: b - a, sa: Number(d.scores[ci]) || 0, sb: Number(d.scores[cj]) || 0 };
+  });
+  if (cmpSort === 'gap') rows.sort((x, y) => Math.abs(y.gap) - Math.abs(x.gap));
+  else rows.sort((x, y) => y.a - x.a);
+
+  const bar = (v, cls) => {
+    const w = Math.max(0, Math.min(100, v));
+    return `<div class="${cls}"><span style="width:${w.toFixed(1)}%"></span></div>`;
+  };
+  const head = `<div class="cmp-h"><span>对比地区</span>
+    <select id="cmpSel">${others.map(n => `<option${n === cmpTown ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    <div class="sw"><b data-csort="rate" class="${cmpSort === 'rate' ? 'on' : ''}">得分降序</b><b data-csort="gap" class="${cmpSort === 'gap' ? 'on' : ''}">差距排序</b></div></div>
+    <div class="cmp-lg"><span><i style="background:#2F8FD0"></i>${esc(current.name)}</span><span><i style="background:#1E9E56"></i>${esc(cmpTown)}</span></div>`;
+
+  el.innerHTML = head + rows.map(r => {
+    const g = r.gap, gc = g > 0.05 ? '#1E9E56' : g < -0.05 ? '#C0392B' : '#98A3AC';
+    return `<div class="cmp-item" title="${esc(r.d.name)}｜${esc(current.name)}：${r.sa.toFixed(2)}/${r.d.score} 分（${r.a.toFixed(1)}%）｜${esc(cmpTown)}：${r.sb.toFixed(2)}/${r.d.score} 分（${r.b.toFixed(1)}%）">
+      <div class="cmp-name"><span class="idx">${r.i + 1}</span><span class="n">${esc(r.d.name)}</span><span class="dl" style="color:${gc}">${g >= 0 ? '+' : ''}${g.toFixed(1)}</span></div>
+      <div class="cmp-bars"><em class="vl">${r.a.toFixed(1)}</em>${bar(r.a, 'cmp-l')}<div class="cmp-m"></div>${bar(r.b, 'cmp-r')}<em class="vr">${r.b.toFixed(1)}</em></div>
+    </div>`;
+  }).join('');
+}
+
+
 function modesInUse() {
   const out = [];
   MODEL.indicators.forEach(d => {
@@ -837,7 +1049,7 @@ function switchTown(name) {
   const t = ranked.find(x => x.name === name);
   if (!t) return;
   current = t;
-  updateHeader(); updateRank(); updateDetail();  drawCompareLines();
+  updateHeader(); updateRank(); updateDetail(); updateCompare(); drawCompareLines();
 }
 
 // 数据改动后整体刷新：重算 → 重绘图表/列表/明细/图例 → 保存
@@ -904,23 +1116,73 @@ function syncPanelHeight(){
 
 function chrome(){  drawCompareLines();                 // 对比线按当前画布尺寸绘制，尺寸变了要重画
   requestAnimationFrame(drawCompareLines);   // 布局/字体就位后再校一次半径
-  updateHeader(); updateRank(); updateDetail(); drawLegend();
+  updateHeader(); updateRank(); updateDetail(); updateCompare(); drawLegend();
   syncPanelHeight();
   requestAnimationFrame(syncPanelHeight);
 }
 
 // 交互：排名行点击（事件委托）
 document.getElementById('panelRank').addEventListener('click', e => {
+  if (e.target.closest('[data-rst]')) {
+    REG_LEVELS.forEach(lv => REGION_SEL[lv.k].clear());
+    regionQuery = {}; openRegionLv = null;
+    updateRank(); return;
+  }
   const row = e.target.closest('.rank-row');
   if (row) switchTown(row.dataset.town);
+});
+
+// 行政区划多选：勾选、搜索、展开状态
+const rankPanel = document.getElementById('panelRank');
+rankPanel.addEventListener('change', e => {
+  const ck = e.target.closest('input[type=checkbox]');
+  if (!ck || !ck.dataset.lv) return;
+  const lv = ck.dataset.lv, set = REGION_SEL[lv];
+  if (ck.dataset.v === '__all__') set.clear();
+  else if (ck.checked) set.add(ck.dataset.v); else set.delete(ck.dataset.v);
+  openRegionLv = lv;
+  rankPanel.querySelector('.rf').outerHTML = regionBarHTML();
+  updateRankList();
+});
+rankPanel.addEventListener('input', e => {
+  const q = e.target.closest('.rpq');
+  if (!q) return;
+  regionQuery[q.dataset.q] = q.value;
+  const lv = q.dataset.q;
+  const box = q.parentElement.querySelector('.rfl');
+  Array.from(box.querySelectorAll('label[title]')).forEach(lb => {
+    lb.style.display = (q.value.trim() && lb.title.indexOf(q.value.trim()) < 0) ? 'none' : '';
+  });
+});
+rankPanel.addEventListener('toggle', e => {
+  const d = e.target.closest('.rfd'); if (!d) return;
+  if (d.open) {
+    rankPanel.querySelectorAll('.rfd').forEach(x => { if (x !== d) x.open = false; });
+    openRegionLv = d.dataset.lv;
+  }
+}, true);
+
+// 指标对比：切换对比地区 / 排序
+document.getElementById('panelCompare').addEventListener('change', e => {
+  const s = e.target.closest('#cmpSel');
+  if (!s) return;
+  cmpTown = s.value;
+  updateCompare();
+});
+document.getElementById('panelCompare').addEventListener('click', e => {
+  const b = e.target.closest('[data-csort]');
+  if (!b || b.dataset.csort === cmpSort) return;
+  cmpSort = b.dataset.csort;
+  updateCompare();
 });
 // Tab 切换
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === tab));
-    const isRank = tab.dataset.tab === 'rank';
-    document.getElementById('panelRank').style.display = isRank ? '' : 'none';
-    document.getElementById('panelDetail').style.display = isRank ? 'none' : '';
+    const key = tab.dataset.tab;
+    document.getElementById('panelRank').style.display = key === 'rank' ? '' : 'none';
+    document.getElementById('panelDetail').style.display = key === 'detail' ? '' : 'none';
+    document.getElementById('panelCompare').style.display = key === 'compare' ? '' : 'none';
     requestAnimationFrame(syncPanelHeight);
   };
 });
