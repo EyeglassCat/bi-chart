@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head>
 <meta charset="utf-8">
 <title>健康乡镇「数字画像」</title>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
 <script src="https://fastly.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   *{box-sizing:border-box;}
@@ -37,7 +37,10 @@
   .cardhead .score b{font-size:20px;color:var(--navy);margin-right:3px;font-family:Menlo,monospace;}
   #chart{position:absolute;left:0;top:0;width:100%;height:100%;}
   .chartbox{position:relative;flex:0 0 auto;height:600px;display:flex;overflow:hidden;}
-  #overlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+  #overlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:auto;cursor:crosshair;}
+  #tipbox{position:absolute;display:none;pointer-events:none;background:rgba(255,255,255,.97);border:1px solid #DEE6F0;
+          box-shadow:0 4px 16px rgba(23,69,111,.14);border-radius:2px;padding:9px 12px;color:#22303C;font-size:12px;
+          max-width:260px;z-index:20;line-height:1.6;}
   .legend{padding:6px 16px 10px;font-size:11.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:14px;
           align-items:center;border-top:1px solid #EDF1F6;}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:1px;margin-right:5px;vertical-align:0px;
@@ -179,6 +182,7 @@
       <div class="chartbox">
         <div id="chart"></div>
         <canvas id="overlay"></canvas>
+        <div id="tipbox"></div>
       </div>
       <div class="legend" id="legend"></div>
     </div>
@@ -246,7 +250,7 @@
   口径说明：花瓣与三条对比线统一为「得分率」（得分 ÷ 分值，0–100%）；最高 / 平均 / 最低、乡镇总分均由下方数据维护模块中的得分与分值实时计算（平均 = 全部乡镇算术平均，含 0 分）。<br>
   数值说明：最大值 / 平均值 / 最小值在图例、悬停提示与下方三列中均同时给出「原始得分（分）」与「得分率（%）」，原始得分 = 得分率 × 该项分值。<br>
   配色说明：玫瑰图默认按「检查方式」（指标申报 / 暗访检查）上色，可在图例右侧切换为「指标分类」上色；检查方式同时作为标签显示在指标明细里，明细可按指标分类或检查方式分组。<br>
-  对齐说明：最高 / 平均 / 最低三条线按花瓣所用极坐标直接绘制（圆心 50%/50%、半径 86%、自 12 点起顺时针、每格 360/指标数 且落在花瓣中心角），每条线段沿角度细分插值，因此 100% 的线段严格贴在 100 分最外圈、与花瓣同格对齐。
+  叶形说明：玫瑰图按「树叶轮廓」重绘——12 点与 6 点为两个叶尖（半径收窄），3 点与 9 点两侧最鼓，整体呈两端窄、中间鼓的叶形；花瓣按叶形半径绘制，三条对比线共用同一套叶形几何。图例右侧可切换「整叶 / 叶瓣」两种造型：整叶为整幅收成一片叶子，叶瓣为每片花瓣单独长成树叶。
 </div>
 
 <script>
@@ -463,7 +467,7 @@ function derive() {
 
 derive();
 
-const chart = echarts.init(document.getElementById('chart'));
+// 叶形玫瑰图改为整幅 Canvas 绘制（不再依赖 ECharts 的极坐标柱状，几何完全可控）
 
 // ── 极坐标公共参数：玫瑰图与雷达图共用同一套中心 / 半径 / 角度 ─────────────
 const POLAR = {
@@ -473,84 +477,73 @@ const POLAR = {
   clockwise: true
 };
 
-function buildOption(town) {
-  const idx = Math.max(0, MODEL.towns.indexOf(town.name));
-  return {
-    animationDuration: 700,
-    tooltip: {
-      trigger: 'item',
-      backgroundColor: 'rgba(255,255,255,.97)',
-      borderColor: '#DEE6F0',
-      borderWidth: 1,
-      padding: [9, 12],
-      textStyle: { color: '#22303C', fontSize: 12 },
-      extraCssText: 'box-shadow:0 4px 16px rgba(23,69,111,.14);border-radius:2px;',
-      formatter: p => {
-        if (p.seriesType !== 'bar') return '';
-        const d = MODEL.indicators[p.dataIndex];
-        const rate = RATES[p.dataIndex][idx] * 100;
-        const got  = Number(d.scores[idx]) || 0;
-        const c = catBaseColor(d.cat);
-        return `<div style="font-weight:700;font-size:13px;margin-bottom:2px">${p.dataIndex + 1}. ${d.name}</div>
-          <div style="font-size:11px;color:${c};margin-bottom:6px">${d.cat} · 分值 ${d.score} 分</div>
-          <div style="font-size:15px;font-weight:700;color:${c}">得分率 ${rate.toFixed(1)}%</div>
-          <div style="font-size:11.5px;color:#7B8794;margin-top:2px">得分 ${got.toFixed(2)} / ${d.score} 分</div>
-          <div style="font-size:11px;color:#98A3AC;margin-top:5px;line-height:1.7">
-            最大值 ${rawOf(p.dataIndex, MAXV[p.dataIndex]).toFixed(2)} 分（${(MAXV[p.dataIndex]*100).toFixed(1)}%）<br>
-            平均值 ${rawOf(p.dataIndex, AVGV[p.dataIndex]).toFixed(2)} 分（${(AVGV[p.dataIndex]*100).toFixed(1)}%）<br>
-            最小值 ${rawOf(p.dataIndex, MINV[p.dataIndex]).toFixed(2)} 分（${(MINV[p.dataIndex]*100).toFixed(1)}%）</div>`;
-      }
-    },
-    // ① 玫瑰图：极坐标柱状，柱子从圆心向外，角度方向 = 指标
-    angleAxis: {
-      type: 'category',
-      data: NAMES,
-      startAngle: POLAR.startAngle,
-      clockwise: POLAR.clockwise,
-      boundaryGap: false,      // 不留间隔：每格恰好占 360/37，花瓣中心对齐雷达射线
-      axisLine: { show: false },
-      axisTick: { show: false },
-      // 外圈标序号 1~37，与右侧「指标明细」和雷达射线一一对应
-      axisLabel: { show: true, margin: 9, fontSize: 9, color: '#8C9AAA', interval: 0,
-                   formatter: (v, i) => i + 1 },
-      splitLine: { show: false }
-    },
-    radiusAxis: {
-      min: 0, max: 100,        // 与雷达的 0–100 同刻度
-      splitNumber: 5,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { show: false },
-      splitLine: { show: true, lineStyle: { color: '#EEF3F9', width: 1 } }
-    },
-    polar: { center: POLAR.center, radius: ['0%', POLAR.radius] },
-    series: [
-      // 花瓣（该镇得分率）
-      {
-        type: 'bar',
-        coordinateSystem: 'polar',
-        barWidth: '100%',
-        silent: false,
-        // itemStyle: { color: p => DATA.indicators[p.dataIndex].color, borderWidth: 0 },
-        itemStyle: { 
-          color: p => MODEL.indicators[p.dataIndex].color,
-          borderRadius: ['0%', '0%', '50%', '50%']
-        },
-        data: RATES.map((arr, i) => ({ value: arr[idx] * 100 })),
-        z: 2
-      }
-    ],
-    // 最高 / 平均 / 最低三条对比线不再用 radar 组件（其角向排布与花瓣分格不同），
-    // 改由 drawCompareLines() 按同一套极坐标几何直接绘制，见下方。
-  };
+// ── 树叶轮廓几何 ────────────────────────────────────────────────
+// 叶尖在 12 点与 6 点（纵向），叶身横向最鼓；纵向再乘一次拉伸，整片叶子立起来铺满画布。
+// leafScale(deg) ∈ [1-LEAF_W, 1]：0° / 180° 为叶尖方向（最长），90° / 270° 为中腰宽度。
+const LEAF_P = 0.72;        // 叶缘曲率指数，越大中腰越圆、两端越陡
+const LEAF_W = 0.5;       // 中腰宽度相对叶长的比例（越小叶子越瘦）
+function leafScale(deg) {
+  return 1 - LEAF_W * Math.pow(Math.abs(Math.sin(deg * Math.PI / 180)), LEAF_P);
 }
 
-// ── 对比线：叠一层 canvas，按花瓣所用的同一套极坐标几何自己画 ─────────────
-// 花瓣分格 = 每格 360/指标数，第 i 个花瓣中心角 = i*step（barWidth 100%，两侧各占半格）
-// 半径刻度 = polar.radius '86%' → R = min(w,h)/2*0.86，故 100% 必落在最外圈
-const OV = document.getElementById('overlay');
+// 当前乡镇的得分率（0–100），供花瓣与三条对比线共用
+let VALS = [];
+let TOWN_IDX = 0;
 
-function drawCompareLines() {
+// 沿角度对指标做线性插值，使花瓣边界与对比线严格重合（叶形轮廓因此连续）
+function interpAt(arr, deg) {
+  if (!arr.length) return 0;
+  const f = (((deg % 360) + 360) % 360) / STEP;
+  const i = Math.floor(f) % arr.length;
+  const nv = arr[(i + 1) % arr.length];
+  return arr[i] + (nv - arr[i]) * (f - Math.floor(f));
+}
+// 叶缘平滑：对得分率做环形滑动平均，只用于画轮廓，数值仍按原始得分率显示
+let SMV = [];
+function smoothVals(arr, win) {
+  const n = arr.length;
+  const half = Math.max(0, Math.floor(win / 2));
+  return arr.map((_, i) => {
+    let s = 0, c = 0;
+    for (let k = -half; k <= half; k++) { s += arr[(i + k + n) % n]; c++; }
+    return s / c;
+  });
+}
+// 叶形半径：平滑后的得分率 × 叶形收敛系数（仍以 100 为满刻度）
+function leafRadius(deg) {
+  return Math.max(0, interpAt(SMV.length ? SMV : VALS, deg)) * leafScale(deg);
+}
+
+// ── 悬停提示：按角度命中具体指标，信息结构与原 ECharts 版一致 ────────────
+function tipHTML(i) {
+  const idx = Math.max(0, MODEL.towns.indexOf(current.name));
+  const d = MODEL.indicators[i];
+  if (!d) return '';
+  const rate = RATES[i][idx] * 100;
+  const got  = Number(d.scores[idx]) || 0;
+  const c = catBaseColor(d.cat);
+  return `<div style="font-weight:700;font-size:13px;margin-bottom:2px">${i + 1}. ${d.name}</div>
+    <div style="font-size:11px;color:${c};margin-bottom:6px">${d.cat} · 分值 ${d.score} 分</div>
+    <div style="font-size:15px;font-weight:700;color:${c}">得分率 ${rate.toFixed(1)}%</div>
+    <div style="font-size:11.5px;color:#7B8794;margin-top:2px">得分 ${got.toFixed(2)} / ${d.score} 分</div>
+    <div style="font-size:11px;color:#98A3AC;margin-top:5px;line-height:1.7">
+      最大值 ${rawOf(i, MAXV[i]).toFixed(2)} 分（${(MAXV[i]*100).toFixed(1)}%）<br>
+      平均值 ${rawOf(i, AVGV[i]).toFixed(2)} 分（${(AVGV[i]*100).toFixed(1)}%）<br>
+      最小值 ${rawOf(i, MINV[i]).toFixed(2)} 分（${(MINV[i]*100).toFixed(1)}%）</div>`;
+}
+
+// 三条对比线、花瓣、序号标尺统一在 drawChart() 里按同一套叶形几何绘制
+
+// ── 叶形玫瑰图：花瓣 · 叶形刻度圈 · 序号标尺 · 三条对比线，全在画布上一次画完 ──
+// 半径刻度 = 86% → R = min(w,h)/2*0.86；0° 在 12 点方向，顺时针；每格 360/指标数
+const OV = document.getElementById('overlay');
+let HOVER_IDX = -1;
+// 形状模式：petal = 每个花瓣本身是一片树叶（根部与尖端窄、中部鼓）；
+//           whole = 整幅轮廓收成一片树叶（12 点 / 6 点为叶尖）
+let LEAF_MODE = 'whole';
+function shapeScale(deg) { return LEAF_MODE === 'whole' ? leafScale(deg) : 1; }
+
+function drawChart() {
   const w = OV.parentElement.clientWidth;
   const h = OV.parentElement.clientHeight;
   if (!w || !h) return;
@@ -563,14 +556,110 @@ function drawCompareLines() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
-  // 本函数的 0° 就对应 12 点方向（即 ECharts 的 startAngle:90），故不再叠加 startAngle
-  const px = (deg, ratio) => [
-    cx + R * ratio * Math.sin(deg * Math.PI / 180),
-    cy - R * ratio * Math.cos(deg * Math.PI / 180)
-  ];
+  const ti = Math.max(0, MODEL.towns.indexOf(current.name));
+  TOWN_IDX = ti;
+  VALS = RATES.map(r => (r[ti] || 0) * 100);
+  SMV = smoothVals(VALS, 7);
+  if (!VALS.length) return;
 
-  // 沿角度细分：相邻指标之间按极坐标插值，同为 100% 的段落就成了贴着外圈的圆弧
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
+  // 纵向拉伸：让叶尖顶到画布上下边，叶子立起来占满竖版版面（横向仍按 R）
+  const sy = LEAF_MODE === 'whole' ? Math.max(1, (h * 0.27) / R) : 1;
+  // 极坐标换算：ratio = 得分率 × 当前形状的收敛系数
+  const px = (deg, pct) => {
+    const ratio = Math.max(pct, 0) * shapeScale(deg) / 100;
+    return [
+      cx + R * ratio * Math.sin(deg * Math.PI / 180),
+      cy - R * ratio * Math.cos(deg * Math.PI / 180) * sy
+    ];
+  };
+
+  // ① 叶形刻度圈：20/40/60/80/100 各画一条同形状的收缩轮廓，像年轮
+  const ringPath = pct => {
+    ctx.beginPath();
+    for (let d = 0; d <= 360; d += 2) {
+      const q = px(d, pct);
+      d === 0 ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]);
+    }
+    ctx.closePath();
+  };
+  ctx.setLineDash([3, 4]);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#EDF2F8';
+  [20, 40, 60, 80].forEach(p => { ringPath(p); ctx.stroke(); });
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#DFE7F1';
+  ringPath(100); ctx.stroke();
+
+  // ② 花瓣
+  const half = STEP / 2;
+  const samples = Math.max(6, Math.round(half / 1.2));
+  // 整叶模式：把得分率压缩到 55%~100% 区间，叶形轮廓主导，数据只做轻柔起伏
+  const damp = v => 58 + 0.42 * Math.max(0, Math.min(100, v));
+  MODEL.indicators.forEach((d, i) => {
+    ctx.beginPath();
+    if (LEAF_MODE === 'petal') {
+      // 每片花瓣本身是一片树叶：根部收尖 → 中部最鼓 → 尖端收尖
+      const a0 = i * STEP;
+      const len = Math.max(0, VALS[i]);
+      const steps = 26;
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const wHalf = half * 0.95 * Math.pow(Math.sin(Math.PI * t), 0.9);
+        const q = px(a0 + wHalf, len * t);
+        s === 0 ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]);
+      }
+      for (let s = steps; s >= 0; s--) {
+        const t = s / steps;
+        const wHalf = half * 0.95 * Math.pow(Math.sin(Math.PI * t), 0.9);
+        const q = px(a0 - wHalf, len * t);
+        ctx.lineTo(q[0], q[1]);
+      }
+      ctx.closePath();
+    } else {
+      ctx.moveTo(cx, cy);
+      for (let s = 0; s <= samples; s++) {
+        const deg = i * STEP - half + (2 * half) * s / samples;
+        const q = px(deg, damp(interpAt(SMV.length ? SMV : VALS, deg)));
+        ctx.lineTo(q[0], q[1]);
+      }
+      ctx.closePath();
+    }
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.5)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    if (HOVER_IDX === i) {
+      ctx.strokeStyle = 'rgba(23,69,111,.6)';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+  });
+
+  // ②′ 叶脉：整叶模式下补一条纵向主脉，强化叶片观感
+  if (LEAF_MODE === 'whole') {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - R * sy * 0.99);
+    ctx.lineTo(cx, cy + R * sy * 0.99);
+    ctx.strokeStyle = 'rgba(255,255,255,.6)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([]);
+    ctx.stroke();
+  }
+
+  // ③ 序号标尺 1~n：沿角度均布，与右侧「指标明细」编号对应
+  ctx.font = '9px "Microsoft YaHei", Arial, sans-serif';
+  ctx.fillStyle = '#8C9AAA';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const LR = R * 0.985;
+  for (let i = 0; i < NAMES.length; i++) {
+    const a = (i * STEP) * Math.PI / 180;
+    ctx.fillText(String(i + 1), cx + LR * Math.sin(a), cy - LR * Math.cos(a) * sy);
+  }
+
+  // ④ 三条对比线：与花瓣共用同一套叶形几何
   const SEG = 10;
   function trace(vals) {
     let started = false;
@@ -578,7 +667,8 @@ function drawCompareLines() {
       const nv = vals[(i + 1) % vals.length];
       for (let s = 0; s < SEG; s++) {
         const t = s / SEG;
-        const p = px((i + t) * STEP, Math.max(v + (nv - v) * t, 0) / 100);
+        const val = Math.max(v + (nv - v) * t, 0);
+        const p = px((i + t) * STEP, LEAF_MODE === 'whole' ? 55 + 0.45 * Math.min(100, val) : val);
         if (started) ctx.lineTo(p[0], p[1]);
         else { ctx.moveTo(p[0], p[1]); started = true; }
       }
@@ -586,37 +676,71 @@ function drawCompareLines() {
     ctx.closePath();
   }
 
-  // ① 37 条分格射线（浅色底纹，与花瓣分界对齐）
-  ctx.beginPath();
-  for (let i = 0; i < NAMES.length; i++) {
-    const a = ((i + 0.5) * STEP) * Math.PI / 180;
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + R * Math.sin(a), cy - R * Math.cos(a));
-  }
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = '#E3EAF3';
   ctx.setLineDash([]);
-  ctx.stroke();
-
-  // ② 最高线先只铺极淡填充，作为底色
   ctx.beginPath(); trace(PCT_MAX);
-  ctx.fillStyle = 'rgba(192,57,43,.05)';
+  ctx.fillStyle = 'rgba(192,57,43,.04)';
   ctx.fill();
 
-  // ③ 平均（虚线，最底层）
   ctx.beginPath(); trace(PCT_AVG);
   ctx.lineWidth = 1.6; ctx.strokeStyle = '#2E6F95'; ctx.setLineDash([6, 4]); ctx.stroke();
 
-  // ④ 最小（金色实线，次顶）
   ctx.beginPath(); trace(PCT_MIN);
   ctx.lineWidth = 1.8; ctx.strokeStyle = '#D8A22A'; ctx.setLineDash([]); ctx.stroke();
 
-  // ⑤ 最大（朱红实线，置顶）
   ctx.beginPath(); trace(PCT_MAX);
   ctx.lineWidth = 1.8; ctx.strokeStyle = '#C0392B'; ctx.setLineDash([]); ctx.stroke();
 
   ctx.setLineDash([]);
 }
+
+// 兼容原有调用点：drawCompareLines 统一指向新的整幅渲染
+const drawCompareLines = drawChart;
+
+// ── 悬停命中：按角度找指标、按叶形半径判断是否落在花瓣内 ────────────────
+const TIPBOX = document.getElementById('tipbox');
+
+function hitTest(evt) {
+  const rect = OV.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  const mx = evt.clientX - rect.left, my = evt.clientY - rect.top;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 * 0.86;
+  const dx = mx - cx, dy = my - cy;
+  const sy = LEAF_MODE === 'whole' ? Math.max(1, (h * 0.27) / R) : 1;
+  const r = Math.hypot(dx, dy / sy);
+  if (r < 8) return -1;
+  let deg = Math.atan2(dx, -dy) * 180 / Math.PI;
+  if (deg < 0) deg += 360;
+  const smooth = SMV.length ? SMV : VALS;
+  const drawn = LEAF_MODE === 'whole'
+    ? (55 + 0.45 * Math.min(100, interpAt(smooth, deg))) * leafScale(deg)
+    : Math.max(0, interpAt(VALS, deg));
+  if (drawn <= 0) return -1;
+  if (r / R * 100 > drawn + 3) return -1;
+  const n = MODEL.indicators.length;
+  return Math.floor(((deg + STEP / 2) % 360) / STEP) % n;
+}
+
+OV.addEventListener('mousemove', evt => {
+  const i = hitTest(evt);
+  if (i !== HOVER_IDX) { HOVER_IDX = i; drawChart(); }
+  if (i < 0) { TIPBOX.style.display = 'none'; return; }
+  TIPBOX.innerHTML = tipHTML(i);
+  TIPBOX.style.display = 'block';
+  const rect = OV.getBoundingClientRect();
+  const b = TIPBOX.getBoundingClientRect();
+  let lx = evt.clientX - rect.left + 16;
+  let ly = evt.clientY - rect.top + 12;
+  if (lx + b.width > rect.width - 4) lx = evt.clientX - rect.left - b.width - 16;
+  if (ly + b.height > rect.height - 4) ly = rect.height - b.height - 6;
+  TIPBOX.style.left = Math.max(4, lx) + 'px';
+  TIPBOX.style.top = Math.max(4, ly) + 'px';
+});
+
+OV.addEventListener('mouseleave', () => {
+  if (HOVER_IDX !== -1) { HOVER_IDX = -1; drawChart(); }
+  TIPBOX.style.display = 'none';
+});
+
 
 // 排名条形配色：第 1 名用政务金，其余由深蓝渐变到浅蓝灰（名次越靠后越淡）
 function rankTone(i, n) {
@@ -713,17 +837,13 @@ function switchTown(name) {
   const t = ranked.find(x => x.name === name);
   if (!t) return;
   current = t;
-  updateHeader(); updateRank(); updateDetail();
-  chart.setOption(buildOption(t), { notMerge: true });
-  drawCompareLines();
+  updateHeader(); updateRank(); updateDetail();  drawCompareLines();
 }
 
 // 数据改动后整体刷新：重算 → 重绘图表/列表/明细/图例 → 保存
 function refreshAll(opts) {
   const silent = opts && opts.silent;
-  derive();
-  chart.setOption(buildOption(current), { notMerge: true });
-  updateHeader(); updateRank(); updateDetail(); drawLegend(); drawCompareLines();
+  derive();  updateHeader(); updateRank(); updateDetail(); drawLegend(); drawCompareLines();
   updateCalcCells();
   if (!silent) saveModel();
 }
@@ -738,6 +858,9 @@ function drawLegend() {
     + `<span><i style="background:#2E6F95"></i>平均值</span>`
     + `<span><i style="background:#D8A22A"></i>最小值</span>`
     + `<span class="lghint">悬停花瓣可见三条线的原始得分（分）与得分率（%）</span>`
+    + `<span class="cmodesw">形状`
+    + `<b data-leaf="petal" class="${LEAF_MODE === 'petal' ? 'on' : ''}">叶瓣</b>`
+    + `<b data-leaf="whole" class="${LEAF_MODE === 'whole' ? 'on' : ''}">整叶</b></span>`
     + `<span class="cmodesw">配色`
     + `<b data-cmode="mode" class="${colorMode === 'mode' ? 'on' : ''}">检查方式</b>`
     + `<b data-cmode="cat" class="${colorMode === 'cat' ? 'on' : ''}">指标分类</b></span>`;
@@ -745,12 +868,17 @@ function drawLegend() {
 
 // 配色切换：只改颜色，不重建数据
 document.getElementById('legend').addEventListener('click', e => {
+  const lf = e.target.closest('[data-leaf]');
+  if (lf) {
+    if (lf.dataset.leaf === LEAF_MODE) return;
+    LEAF_MODE = lf.dataset.leaf;
+    drawLegend(); drawChart();
+    return;
+  }
   const b = e.target.closest('[data-cmode]');
   if (!b || b.dataset.cmode === colorMode) return;
   colorMode = b.dataset.cmode;
-  derive();
-  chart.setOption(buildOption(current), { notMerge: true });
-  drawLegend(); updateDetail(); drawCompareLines();
+  derive();  drawLegend(); updateDetail(); drawCompareLines();
 });
 
 // 指标明细的分组方式：按指标分类 / 按检查方式
@@ -774,9 +902,7 @@ function syncPanelHeight(){
   right.style.height = want + 'px';
 }
 
-function chrome(){
-  chart.setOption(buildOption(current), { notMerge: true });
-  drawCompareLines();                 // 对比线按当前画布尺寸绘制，尺寸变了要重画
+function chrome(){  drawCompareLines();                 // 对比线按当前画布尺寸绘制，尺寸变了要重画
   requestAnimationFrame(drawCompareLines);   // 布局/字体就位后再校一次半径
   updateHeader(); updateRank(); updateDetail(); drawLegend();
   syncPanelHeight();
@@ -809,7 +935,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 })();
 if (current !== ranked[0]) { switchTown(current.name); }
 
-window.addEventListener('resize', () => { chart.resize(); drawCompareLines(); syncPanelHeight(); });
+window.addEventListener('resize', () => { drawChart(); syncPanelHeight(); });
 // 容器尺寸一变化就同步重算：既覆盖窗口缩放，也覆盖首次布局未定时的补绘
 // 用 rAF 合并 + 尺寸比较，避免 resize → 布局变化 → resize 的无限放大
 let __roTick = false, __lastBox = '';
@@ -824,7 +950,7 @@ if (window.ResizeObserver) {
       const key = box.clientWidth + 'x' + box.clientHeight;
       if (key === __lastBox) return;
       __lastBox = key;
-      chart.resize();
+      drawChart();
       drawCompareLines();
       syncPanelHeight();
     });
